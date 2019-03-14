@@ -14,7 +14,7 @@ requirements
 gcc > 4.8 <br />
 openmpi <br />
 openssl <br />
-
+cmocka (for unit testing)
 
 How to compile:
 --------------
