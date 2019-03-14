@@ -48,7 +48,7 @@ How it works
 
 First the programm sort the reads by genome's coordinates and extract discordant and unmapped (end and mate) reads with the same technics describe in mpiSORT. <br />
 
-Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mate are not marked. To limit memory overhead we build a distributed perfect hash table for fragment list and end list this way the memory usage stay low.  <br />
+Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mate are not marked. To limit memory overhead we build a distributed perfect hash table for fragment list and end list. This way the memory usage stay low.  <br />
 
 Finally each chromosom is compressed with bgzf and writen down in the output folder.
 
