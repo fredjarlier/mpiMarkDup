@@ -20,8 +20,12 @@ How to compile:
 --------------
 aclocal <br />
 autoconf <br />
+autoreconf <br />
+automake --add-missing
 ./configure --prefix /usr/local CC=path_to_mpicc <br />
 make <br />
+make install <br />
+make clean <br />
 
 How to test it
 -------------
