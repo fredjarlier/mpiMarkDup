@@ -1,8 +1,32 @@
+/*
+   mpiSORT
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   mpiSORT is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   mpiSORT is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser Public License
+   along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+   Module:
+     log.c
+     
+   Authors:
+    Frederic Jarlier,   Institut Curie
+    Firmain Martin,     Paris Descartes University
+*/
+
+
 #include "log.h"
 
 /**
  * @file log.c
- * @author Firmin Martin
  * @note inspired from https://github.com/pysam-developers/pysam/blob/master/htslib/htslib/hts_log.h
  * @todo use constructor to create communicator restricted logger.
  */
@@ -22,7 +46,6 @@ struct mdLog md = {.verbose = MD_LOG_DEBUG, .comm = MPI_COMM_WORLD};
 
 /**
  * @date 2018 Mar 24
- * @author Firmin Martin
  * @brief set the logger's level
  * @param[in] level logger severity level
  * @note Could be used to debug a snippet by setting md_verbose to MD_LOG_OFF,
@@ -38,7 +61,6 @@ void md_set_log_level(enum mdLogLevel level) {
 
 /**
  * @date 2018 Mar 24
- * @author Firmin Martin
  * @brief get the logger's level
  * @return logger severity level
  */
@@ -49,7 +71,6 @@ enum mdLogLevel md_get_log_level() {
 
 /**
  * @date 2018 Apr 2
- * @author Firmin Martin
  * @brief set the logger's communicator
  * @param[in] comm logger communicator
  */
@@ -61,7 +82,6 @@ void md_set_log_comm(MPI_Comm comm) {
 
 /**
  * @date 2018 Mar 24
- * @author Firmin Martin
  * @brief get the logger's communicator
  * @return logger's communicator
  */
@@ -72,7 +92,6 @@ MPI_Comm md_get_log_comm() {
 
 /**
  * @date 2018 Mar 24
- * @author Firmin Martin
  * @brief Given logger level, return its corresponding string
  * @param[in] level logger severity level
  * @return level corresponding string
@@ -105,7 +124,6 @@ const char *get_level_tag(enum mdLogLevel level) {
 
 /**
  * @date                2018 Mar 24
- * @author              Firmin Martin
  * @brief Logs event through all process.
  * @param level         Severity of the event:
  *                          - MD_LOG_OFF do nothing.
@@ -196,7 +214,6 @@ void md_log_all(enum mdLogLevel level, const char *file,  const char *function, 
 
 /**
  * @date                2018 Mar 24
- * @author              Firmin Martin
  * @brief Logs event through one process
  * @param rank          procs rank
  * @param level         Severity of the event:
