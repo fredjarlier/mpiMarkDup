@@ -36,7 +36,7 @@ mpirun -n 8 mpiMD sam_file output_dir -q 0 -d 1000 -v 4 <br />
 
 -q is for quality filtering <br />
 -d is for optical distance duplicate <br />
--v is level of verbose <br />
+-v is level of log verbose <br />
     0 is LOG_OFF  <br />
     1 is LOG_ERROR  <br />
     2 is LOG_WARNING  <br />
