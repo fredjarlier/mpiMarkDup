@@ -27,7 +27,7 @@
     Leonor Sirotti,     Institut Curie
     Thomas Magalhaes,   Institut Curie
     Paul Paganiban,     Institut Curie
-    Firmain Martin,     Paris Descartes University
+    Firmin Martin,     Paris Descartes University
 */
 
 #ifdef HAVE_CONFIG_H
