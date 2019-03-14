@@ -11,26 +11,32 @@ The code is a fork from the mpiSORT. We add an extra process (see markduplicate.
 
 requirements
 ------------
-gcc > 4.8 
-openmpi 
-openssl 
+gcc > 4.8 <br />
+openmpi <br />
+openssl <br />
 
 
 How to compile:
 --------------
-aclocal
-autoconf
-./configure --prefix /usr/local CC=path_to_mpicc
-make
+aclocal <br />
+autoconf <br />
+./configure --prefix /usr/local CC=path_to_mpicc <br />
+make <br />
 
-Howto test it
+How to test it
 -------------
 
-mpirun -n 8 mpiMD sam_file output_dir -q 0 -d 1000 -v 4 
+mpirun -n 8 mpiMD sam_file output_dir -q 0 -d 1000 -v 4 <br />
 
--q is for quality filtering
--d is for optical distance duplicate
--v is level of verbose
+-q is for quality filtering <br />
+-d is for optical distance duplicate <br />
+-v is level of verbose <br />
+
+How it works
+------------
+
+
+
 
 
 
