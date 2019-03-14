@@ -1,17 +1,14 @@
 /*
    mpiSORT
-   Copyright (C) 2016-2017 Institut Curie / Institut Pasteur
-
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
    mpiSORT is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
-
    mpiSORT is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
-
    You should have received a copy of the GNU Lesser Public License
    along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -22,13 +19,7 @@
 
    Authors:
     Frederic Jarlier,   Institut Curie
-    Nicolas Joly,       Institut Pasteur
-    Nicolas Fedy,       Institut Curie
-    Leonor Sirotti,     Institut Curie
-    Thomas Magalhaes,   Institut Curie
-    Paul Paganiban,     Institut Curie
-    Tarik id Belouch,   Institut Curie
-    Georges Amazo,      Institut Curie
+    Firmin Martin,      Paris Descartes
 */
 
 /**
@@ -61,7 +52,6 @@ extern int opticalDistance;
 
 /**
  * @date 2018 Mar 23
- * @author Firmin Martin
  * @brief Convert a read to a coordinate mate info data structure
  * @param[in] read a read
  * @param[out] a coordinate mate info
@@ -81,7 +71,6 @@ inline CMInfo read2CM(readInfo *read) {
 
 /**
  * @date 2018 Feb 26
- * @author Firmin Martin
  * @param[in] token the string where we search tag
  * @param[in] tag searched tag in a read line
  * @return if tag is found, return the value of the tag, NULL otherwise.
@@ -103,7 +92,6 @@ char *getReadTagValue(char *token, const char *tag) {
 
 /**
  *   @date 2018 Mar 23
- *   @author Firmin Martin
  *   @brief Determine where we can find mate.
  *   @details There is 4 cases
  *      1. check_with_bruck == 0 : mate is in the current buffer
@@ -213,7 +201,6 @@ check:
 
 /**
 * @date 2018 Apr. 20
-* @author Firmin Martin
 * @brief Compute reference length. Reference length is defined by the length of base which cigar operator is one of M/D/N/X/EQ.
 * @param[in] cigar cigar string
 * @return reference length
@@ -246,7 +233,6 @@ size_t getReferenceLength(char *cigar) {
 
 /**
  * @date 2018 Apr. 20
- * @author Firmin Martin
  * @brief Compute Alignment End. See htsjdk/samtools/SAMRecord.java, function getAlignmentEnd()
  * @details alignmentEnd := alignmentStart + referenceLength - 1
  * @param[in] alignmentStart alignment start coordinate
@@ -261,7 +247,6 @@ size_t getAlignmentEnd(size_t alignmentStart, char *cigar) {
 /**
  * @date 2018 Apr. 20
  * @param[in] alignmentStart alignment start coordinate
- * @author Firmin Martin
  * @brief Compute unclipped end. See htsjdk/samtools/SAMRecord.java, function getUnclippedEnd()
  * @param[in] cigar cigar string
  * @return unclipped end coordinate
@@ -291,7 +276,6 @@ size_t getUnclippedEnd(size_t alignmentStart, char *cigar) {
 
 /**
  * @date 2018 Apr. 20
- * @author Firmin Martin
  * @brief Compute unclipped start. See htsjdk/samtools/SAMUtils.java, function getUnclippedStart()
  * @param[in] alignmentStart alignment start coordinate
  * @param[in] cigar cigar string
@@ -319,7 +303,6 @@ size_t getUnclippedStart (size_t alignmentStart, char *cigar) {
 
 /**
  * @date 2018 Apr. 15
- * @author Firmin Martin
  * @brief Compute unclipped unclippedCoordPos by cigar string
  * @details Unclipped coordinate is defined by :
  *      - unclipped end, if read is reverse strand
@@ -342,7 +325,6 @@ void fillUnclippedCoord(readInfo *read) {
 
 /**
  * @date 2018 Apr. 16
- * @author Firmin Martin
  * @brief Compute read optical location
  * @details read Qname should have the following format `identifier:lane:tile:x:y`.
  * @param[in, out] read a read
@@ -381,7 +363,6 @@ coord computePhysicalLocation(readInfo *read) {
 
 /**
  *  @date 2018 Feb 26
- *  @comment{Xingwei Sang, Firmin Martin}
  *  @brief Parse a read line and fill a read structure. The resultant read is inserted in a library.
  *  @param[in] sam_buff a read line to parse
  *  @param[in] intervalByProc interval of coordinate by process
@@ -613,7 +594,6 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
 
 /**
  * @date 2018 Mar. 26
- * @author Firmin Martin
  * @brief Given a read, mark its mate as checked and assigned it a duplicate flag.
  * @param[in,out] htbl perfect hash table
  * @param[in] read a read
@@ -637,7 +617,6 @@ int markMateDuplicateFlag(hashTable *htbl, readInfo *read, int d) {
 
 /**
  * @date 2018 Apr 12
- * @author Firmin Martin
  * @brief Compare two reads from different pair, decide whether or not two pairs belong to the same cluster
  * @param[in] pair1 first read in one pair
  * @param[in] pair2 first read in another pair
@@ -674,7 +653,6 @@ int areComparableForDuplicates(readInfo *pair1, readInfo *pair2, const int isPai
 
 /**
  * @date 2018 Apr 15
- * @author Firmin Martin
  * @brief Compare two reads from different pair, decide whether or not two pairs are close enough
  * @param[in] pair1 first read in one pair
  * @param[in] pair2 first read in another pair
@@ -687,7 +665,6 @@ inline int closeEnough(readInfo *lhs, readInfo *rhs) {
 
 /**
  * @date 2018 Apr 15
- * @author Firmin Martin
  * @brief Compare two reads from different pair, decide whether or not two pairs are close enough
  * @param[in] cluster list of pairs in the same cluster
  * @param[in] best read has the best phred score
@@ -736,7 +713,6 @@ void trackOpticalDuplicates(llist_t *cluster, readInfo *best) {
 
 /**
  * @date 2018 Apr 12
- * @author Firmin Martin
  * @brief Mark as duplicate every pairs haven't the best phred score
  * @param[in] cluster a cluster
  * @param[in] htbl hash table
@@ -794,7 +770,6 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
 
 /**
  * @date 2018 Apr 12
- * @author Firmin Martin
  * @brief Mark fragments as duplicates
  * @param[in] cluster a cluster
  * @param[in] htbl hash table
@@ -850,7 +825,6 @@ void markDuplicateFragments(llist_t *cluster, hashTable *htbl, int *totalDuplica
 
 /**
  * @date 2018 Jan 23
- * @comment{Firmin Martin}
  * @brief return in outerDuplicate the amount of reads need to be checked by Bruck.
  * @details Count "check_with_bruck" field of all read in p_list.
  *          The result is assigned in outerDuplicate.
@@ -878,7 +852,6 @@ int countExternalMateInList(llist_t *list, size_t *externalMate) {
 
 /**
  * @date 2018 Apr 12
- * @author Firmin Martin
  * @brief Find and mark duplicate read in a library
  * @param[in, out] fragList fragments list
  * @param[in, out] readEndsList paired-ends list
@@ -973,7 +946,6 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
 
 /**
  * @date 2018 Feb 26
- * @comment{Firmin Martin, Xingwei Sang}
  * @param[in] list a fragments/paired-Ends list
  * @param[out] mates array of mates filled
  * @return number of 'check_with_bruck == 1' reads
@@ -1011,7 +983,6 @@ size_t getMateRankReadSizeBeforeBruck(llist_t *list, mateInfo **mates) {
 
 /**
  * @date 2018 Feb 26
- * @author Firmin Martin
  * @brief Compute send/recv count array and send/recv displacements array.
  * @param[in] numberOfReadsToSend number of reads to send
  * @param[out] scounts  Integer array, where entry i specifies the number of elements to send to rank i.
@@ -1056,7 +1027,6 @@ int computeCountAndDispl(int *scounts, int **sdispls, int **rcounts, int **rdisp
 
 /**
  * @date 2018 Feb 26
- * @author Firmin Martin
  * @brief Communication part of mark duplicate, exchange mates.
  * @param[out] matesByProc array of reads gather from others process
  * @param[in] mates array of mates to send sorted by rank
@@ -1180,7 +1150,6 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
 
 /**
  *   @date 2018 Feb 28
- *   @comment{Firmin Martin}
  *   @brief All processes send data to all processes, zero-copy version of MPI_Alltoall using Bruck's algorithm.
  *   @param[in] sendbuf     Starting address of send buffer (choice).
  *   @param[in] sendcount   Number of elements to send to each process (integer).
@@ -1291,7 +1260,6 @@ void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
 
 /**
  * @date 2018 Mar 23
- * @author Firmin Martin
  * @brief Determine mate rank and check_with_bruck for read which mate is in multiple proc interval range.
  * @details Algorithm :
  *    1. Fill a request array : if a mate is susceptible to be in multiple rank, send a request to them.
@@ -1446,7 +1414,6 @@ void ensureMateRank(readInfo **readArr, Interval *intervalByProc, size_t readNum
 
 /**
  * @date 2018 Apr 15
- * @author Firmin Martin
  * @brief Insert a read in fragments list or pairs list
  * @param[in, out] l list
  * @param[in] read a read
@@ -1484,7 +1451,6 @@ void insertReadInList(llist_t *l, readInfo *read, const int isFragmentList) {
 
 /**
  * @date 2018 Apr 15
- * @author Firmin Martin
  * @brief Build a paired-end and insert it in @p readEndsList list
  * @param[in] read1 first read
  * @param[in] read2 second read
@@ -1549,7 +1515,6 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList)
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Fill reads, libraries list, reads array and reads line
  *   @param[in] bufferReads read buffer
  *   @param[in] intervalByProc interval coordinate by process
@@ -1683,7 +1648,6 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
 
 /**
  *   @date 2018 Apr 7
- *   @author Firmin Martin
  *   @brief Create MPI derived type corresponding to Interval
  *   @param[out] intervalType the MPI derived type
  */
@@ -1708,7 +1672,6 @@ static void createIntervalType(MPI_Datatype *intervalType) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief gather interval from each proc
  *   @param[in] interval coordinate interval
  *   @param[in] comm markDuplicate communicator
@@ -1729,7 +1692,6 @@ Interval *gatherIntervalByProc(Interval interval, MPI_Comm comm) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Convert a flag value to string
  *   @param[in] flagValue a read flag
  *   @return associated string of @p flagValue
@@ -1743,7 +1705,6 @@ char *flag2string(int flagValue) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given a read line, return a new one with duplicate flag
  *   @param[in] oldReadLine a read line
  *   @param[out] read the associated read
@@ -1765,7 +1726,6 @@ char *addDuplicateFlag(char *oldReadLine, readInfo *read) {
 
 /**
 *   @date 2018 Feb 26
-*   @author Firmin Martin
 *   @brief return the new reads buffer with duplicate flag
 *   @param[in] samTokenLines an array of reads lines
 *   @param[in] readArr an array of reads which have been handled
@@ -1822,7 +1782,6 @@ char *writeBuff(char **samTokenLines, readInfo **readArr, size_t readNum) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief[in] Given a read line, return its POS field
  *   @param samLine a read line
  *   @return the field POS of the read
@@ -1841,7 +1800,6 @@ int getPosFromLine(char *samLine) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given a read buffer and the amount of reads, return coordinate interval.
  *   @param[in] bufferReads reads buffer (i.e. SAM file without header)
  *   @param[in] readNum total amount of reads
@@ -1877,7 +1835,6 @@ Interval getIntervalFromBuffer(char *bufferReads, size_t readNum) {
 
 /**
  * @date 2018 Mar 23
- * @author Firmin Martin
  * @brief return the amount of reads need to be checked by Bruck.
  * @details Count "check_with_bruck" field of all read in a readInfo array
  * @param[in] readArr a read array
@@ -1901,7 +1858,6 @@ int countExternalMateInArray(readInfo **readArr, size_t readNum, unsigned int ch
 
 /**
  * @date 2018 Mar 23
- * @author Firmin Martin
  * @brief Fill reads array with external mates.
  * @param[in] readArr array of read
  * @param[out] readArrWithExternal array of read with external mates
@@ -1951,7 +1907,6 @@ inline unsigned int readFlag2MateFlag(unsigned int readFlag) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Exchange extern fragments and complete pairs information (phredScore and mate index)
  *   @param[out] fragList fragments list
  *   @param[out] readEndsList paired-end list
@@ -2056,7 +2011,6 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
 
 /**
  * @date 2018 Feb 26
- * @comment{Xingwei Sang, Firmin Martin}
  * @brief Find and mark duplicate reads.
  * @param bufferReads reads buffers (i.e. SAM file without header)
  * @param readNum total amount of reads
