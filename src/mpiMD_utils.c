@@ -15,7 +15,7 @@
 
 /*
    Module:
-     llist.c
+     mpiMD_utils.c
      
    Authors:
     Frederic Jarlier,   Institut Curie
