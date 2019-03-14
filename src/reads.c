@@ -1,10 +1,32 @@
+/*
+   mpiSORT
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   mpiSORT is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   mpiSORT is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser Public License
+   along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+   Module:
+     llist.c
+     
+   Authors:
+    Frederic Jarlier,   Institut Curie
+    Firmin Martin,     Paris Descartes University
+*/
 
 #include "reads.h"
 
 
 /**
  *   @date 2018 Mar 23
- *   @comment {Firmin Martin}
  *   @brief free a read
  *   @param[out] read a read
  */
@@ -31,7 +53,6 @@ int freeRead(readInfo* read) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Compare two mates by their rank
  *   @param[in] a a mate
  *   @param[in] b another mate
@@ -46,7 +67,6 @@ int cmpMateRank(const void *a, const void *b) {
 
 /**
  *   @date 2018 Mar 23
- *   @author Firmin Martin
  *   @brief Create MPI derived type corresponding to CMInfo
  *   @param[out] CMtype the MPI derived type
  */
@@ -70,7 +90,6 @@ void createCMType(MPI_Datatype *CMtype) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Create MPI derived type corresponding to mateInfo
  *   @param[out] mate_type the MPI derived type
  *   @todo we exchange more field than we need for commodity, remove them for release.
@@ -104,7 +123,6 @@ void createMateType(MPI_Datatype *mate_type) {
 
 /**
  * @date 2018 Mar 23
- * @author Firmin Martin
  * @brief Clone a read
  * @param[in] read a readArrWithExternal
  * @return a read cloned
@@ -139,7 +157,6 @@ readInfo *cloneRead(readInfo *read) {
 
 /**
  * @date 2018 Apr 12
- * @author Firmin Martin
  * @brief Compute orientation (reverse strand x first/second in pair) for a given read
  * @param[in] read1 first read in one pair
  * @param[in] isPaired read is paired ?
@@ -181,7 +198,6 @@ orientation getOrientation (readInfo *read, const int isPaired) {
 
 /**
  * @date 2018 Apr 15
- * @author Firmin Martin
  * @brief Verify if a read is paired
  * @details Note that a read is not paired if its mate is unmapped according markDuplicate
  * @param[in] read
