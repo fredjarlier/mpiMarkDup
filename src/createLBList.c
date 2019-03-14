@@ -1,6 +1,6 @@
 /*
    mpiSORT
-   Copyright (C) 2016-2017 Institut Curie / Institut Pasteur
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
 
    mpiSORT is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -22,13 +22,8 @@
 
    Authors:
     Frederic Jarlier,   Institut Curie
-    Nicolas Joly,       Institut Pasteur
-    Nicolas Fedy,       Institut Curie
-    Leonor Sirotti,     Institut Curie
-    Thomas Magalhaes,   Institut Curie
-    Paul Paganiban,     Institut Curie
-    Tarik id Belouch,   Institut Curie
-    Georges Amazo,      Institut Curie
+    Firmain Martin,     Paris Descartes
+    Xingwei Sang,       Paris Descartes
 */
 
 #define _GNU_SOURCE
@@ -67,7 +62,6 @@ void freeChrInfo(chrInfo* chr){
 
 /*
  * @date 2018 Jan 27
- * @comment{Xingwei Sang, Firmin Martin}
  * @brief given a header returns the amount of libs and an array of lib name
  * @param[in,out] header a SAM header string
  * @param[out] lb_num total number of lib
@@ -133,7 +127,6 @@ int createLBList(char *header2, int *lb_num, char *lb_list[]) {
 
 /*
  * @date 2018 Jan 27
- * @comment{Xingwei Sang, Firmin Martin}
  * @brief Given a @RG line, add new LB name into lb_list and increase lb_num.
  * @param[in,out] tokenLine a @RG line from SAM header
  * @param[in,out] lb_list array of lib name
@@ -198,7 +191,6 @@ static int getLBname(char *tokenLine, char *lb_list[], int *lb_num) {
 
 /*
  * @date 2018 Apr. 18
- * @author Firmin Martin
  * @brief given a header returns the amount of libs and an array of chromosome name
  * @param[in] header a SAM header string
  * @param[out] chr_list array of chromosome name
@@ -243,7 +235,6 @@ int createChrList(char *header2, char *chr_list[]) {
 
 /*
  * @date 2018 Apr. 18
- * @author Firmin Martin
  * @brief Given a @SQ line, add new Chr name into chr_list and increase chr_num.
  * @param[in,out] tokenLine a @SQ line from SAM header
  * @param[in,out] chr_list array of lib name
