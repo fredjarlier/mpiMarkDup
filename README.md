@@ -5,7 +5,7 @@ This is an open project initiated by Institut Curie HPC team and students from P
 
 The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on MPI and C technology and parallel algorithms.   
 
-The project is still under development and first results are encouraging. We are close to 100% reproducible.
+The project is still under development and first results are encouraging.
 
 The code is a fork from the mpiSORT. We add an extra process (see markduplicate.c) in the loop to manage the marking of duplicates read.
 
@@ -31,6 +31,12 @@ mpirun -n 8 mpiMD sam_file output_dir -q 0 -d 1000 -v 4 <br />
 -q is for quality filtering <br />
 -d is for optical distance duplicate <br />
 -v is level of verbose <br />
+    0 is LOG_OFF  <br />
+    1 is LOG_ERROR  <br />
+    2 is LOG_WARNING  <br />
+    3 is LOG_INFO (default) <br />
+    4 is LOG_DEBUG  <br />
+    5 is LOG_TRACE  <br />
 
 How it works
 ------------
