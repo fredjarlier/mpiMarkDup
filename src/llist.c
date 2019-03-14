@@ -1,14 +1,37 @@
+/*
+   mpiSORT
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   mpiSORT is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   mpiSORT is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser Public License
+   along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+   Module:
+     llist.c
+     
+   Authors:
+    Frederic Jarlier,   Institut Curie
+    Firmain Martin,     Paris Descartes University
+*/
+
+
 #include "llist.h"
 
 /**
  * @file llist.c
  * @brief  Doubly circular linked list
- * @author Firmin Martin
  */
 
 /**
  * @date 2018 Apr 12
- * @author Firmin Martin
  * @brief Compare two paired-end
  * @details This function is used to determine the order of the insertion in List.
  * @param[in] read1 first read in one pair
@@ -115,7 +138,6 @@ endCompare:
 /**
  * @date 2018 Apr. 19
  * @brief Allocate and initialize a circular linked list.
- * @author Firmin Martin
  * @return a list initialized
  */
 
@@ -137,7 +159,6 @@ llist_t *llist_create() {
  * @brief Clear a circular linked list.
  * @details
  *      The returned linked list is come back to its initial state, i.e. A list with one dummy node and zero-size.
- * @author Firmin Martin
  * @param[in, out] l a circular linked list
  * @return a list cleared
  */
@@ -162,7 +183,6 @@ void llist_clear(llist_t *l) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Free a circular linked list.
  * @param[in, out] l a circular linked list
  */
@@ -184,7 +204,6 @@ void llist_destruct(llist_t *l) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Given an index @p n, do a linear search on a list
  * @param[in, out] l a list
  * @param[in] n index
@@ -210,7 +229,6 @@ lnode_t *llist_lsearch(llist_t *l, int n) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Delete a node from a list
  * @param[in, out] l a list
  * @param[in, out] p a node
@@ -236,7 +254,6 @@ readInfo *llist_delete_ptr(llist_t *l, lnode_t *p) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Delete the node of index n
  * @param[in,out] l a list
  * @param[in] n index
@@ -254,7 +271,6 @@ readInfo *llist_delete(llist_t *l, int n) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Insert a node @p x before a @p node
  * @param[in,out] node the node to prepend
  * @param[in,out] x the node to insert
@@ -270,7 +286,6 @@ static void llist_insert_ptr(lnode_t *node, lnode_t *x) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Given an index n, insert in the front of the node n
  * @param[in,out] l a list
  * @param[in] n index
@@ -299,7 +314,6 @@ lnode_t *llist_insert_index(llist_t *l, int n, readInfo *e) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Insert a read @p e before a ginven @p lnode in a list @p l
  * @param[in,out] l a list
  * @param[in, out] lnode
@@ -328,7 +342,6 @@ lnode_t *llist_insert_node(llist_t *l, lnode_t *lnode, readInfo *e) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Append a read in a circular linked list.
  * @param[in,out] l a list
  * @param[in] e a read
@@ -353,7 +366,6 @@ lnode_t *llist_append(llist_t *l, readInfo *e) {
 
 /**
  * @date 2018 Apr. 19
- * @author Firmin Martin
  * @brief Print a readInfo list
  * @param[in, out] l a list
  * @param[in] comm
@@ -381,7 +393,6 @@ void llist_readInfo_print(llist_t *l, MPI_Comm comm) {
 
 /**
  * @date 2018 Apr. 22
- * @author Firmin Martin
  * @brief Merge sort for circular doubly linked list
  * @param[in, out] l a circular doubly linked list
  * @param[in] isFragment is a fragment list ?
