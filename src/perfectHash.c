@@ -1,9 +1,32 @@
+/*
+   mpiSORT
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   mpiSORT is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   mpiSORT is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser Public License
+   along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+   Module:
+     perfectHash.c
+     
+   Authors:
+    Frederic Jarlier,   Institut Curie
+    Firmin Martin,     Paris Descartes University
+*/
+
 #include "perfectHash.h"
 
 /**
  *   @date 2018 Feb 26
  *   @file perfectHash.c
- *   @author Firmin Martin
  *   @brief Perfect hashing implementation adapted to multiple processes context.
  *   @details Each process implement a perfect hashing table with a *common main universal hash function*. 
  *            Hence, processes can exchange read which have a locally given fingerprint.
@@ -84,7 +107,6 @@
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief extended modulo function, always return a positif integer
  *   @param[in] a an integer
  *   @param[in] b an integer
@@ -97,7 +119,6 @@ static unsigned long long mod(unsigned long long a, unsigned long long b) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief verify if an integer is prime or not
  *   @param[in] n an integer
  *   @return 1 if n is prime, 0 otherwise
@@ -115,7 +136,6 @@ static int isPrime (int n) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief return the next prime greater than @p m
  *   @param[in] m an integer
  *   @return the next prime
@@ -133,7 +153,6 @@ static int getPrimeGT(int m) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief convert a string to a 64 bits MD5.
  *   @param str the string to convert
  *   @return the associated 64bits MD5
@@ -156,7 +175,6 @@ unsigned long long string2MD5(char *str) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Compute the fingerprint of a read.
  *   @details This function take account the Qname and the order in a pair
  *            i.e. first in pair or second in pair. Hence, we can distinguish
@@ -183,7 +201,6 @@ unsigned long long read2Fingerprint(readInfo *read) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief A universal hash function \f[ h(k) = (ak + b \pmod p) \pmod m \f]
  *   @param hp hash parameter
  *   @param p prime number greater than @p hp.m
@@ -199,7 +216,6 @@ int univHash(hashParam hp, int p, unsigned long long k) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Compute space using by the hash function
  *   @param hp hash parameter
  *   @param p prime number greater than @p hp.m
@@ -231,7 +247,6 @@ int computeSpace(hashParam hp, int p, readInfo **arr, int size) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given hash parameters, construct main universal hash function
  *   @param hp hash parameter
  *   @param p prime number greater than @p hp.m
@@ -254,7 +269,6 @@ void constructMainUnivHashWithHp(hashParam hp, int *p, readInfo **arr, int size)
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Construct main universal hash function
  *   @param hp hash parameter
  *   @param p prime number greater than @p hp.m
@@ -281,7 +295,6 @@ void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, int size) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Test whether or not an universal hash function has collision.
  *   @param hp hash parameter
  *   @param p prime number greater than @p hp.m
@@ -312,7 +325,6 @@ int haveCollision(hashParam hp, int prime, unsigned long long *arr, int size) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Construct second level hash table
  *   @param htbl a hash table
  *   @param arr an array of reads
@@ -408,7 +420,6 @@ void constructSecTable(hashTable *htbl, readInfo **arr, int size) {
 
 /**
  *   @date 2018 Mar 23
- *   @author Firmin Martin
  *   @brief Replace hashed read by another
  *   @param[out] htbl a hash table
  *   @param[in] read a read
@@ -431,7 +442,6 @@ void hashTableInsert(hashTable *htbl, readInfo *read) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given hash parameters, initialize a perfect hashing table.
  *   @param htbl a hash table
  *   @param hp universal hash parameters
@@ -453,7 +463,6 @@ void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, int size
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Initialize a perfect hashing table.
  *   @param htbl a hash table
  *   @param arr an array of reads
@@ -474,7 +483,6 @@ void hashTableInit(hashTable *htbl, readInfo **arr, int size) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Destroy perfect hashing table.
  *   @param htbl a hash table
  *   @note This function doesn't free reads, this task is left to destroyLBList().
@@ -493,7 +501,6 @@ void hashTableDestroy(hashTable *htbl) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Print out perfect hashing table.
  *   @param htbl a hash table
  *   @param arr array of reads
@@ -518,7 +525,6 @@ void printPerfectHashTable(hashTable *htbl) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given a fingerprint return the associated read.
  *   @param htbl a hash table
  *   @param read a read fingerprint
@@ -550,7 +556,6 @@ readInfo *getReadFromFingerprint(hashTable *htbl, unsigned long long fingerprint
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given a Qname and pair order return the associated read.
  *   @param htbl a hash table
  *   @param Qname the Qname of a read
@@ -570,7 +575,6 @@ readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *Qname, int PairNum) 
 
 /**
  *   @date 2018 Mar 23
- *   @author Firmin Martin
  *   @brief Given a read return its mate fingerprint
  *   @param[in] read a read
  *   @return @p read's mate fingerprint
@@ -588,7 +592,6 @@ unsigned long long read2mateFP(readInfo *read) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Given a read return its mate.
  *   @param htbl a hash table
  *   @param read a read
@@ -602,7 +605,6 @@ readInfo *getMateFromRead(hashTable *htbl, readInfo *read) {
 
 /**
  *   @date 2018 Apr 7
- *   @author Firmin Martin
  *   @brief Create MPI derived type corresponding to hashParam
  *   @param[out] HPType the MPI derived type
  */
@@ -626,7 +628,6 @@ static void createHPType(MPI_Datatype *HPType) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief Construct perfect hashing table through all process.
  *   @param htbl a hash table
  *   @param arr an array of reads
