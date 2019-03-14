@@ -1,0 +1,21 @@
+# Process this file with autoconf to produce a configure script.
+AC_PREREQ([2.69])
+AC_INIT([mpisort], [1.0])
+#AC_CONFIG_HEADERS([src/config.h])
+AM_INIT_AUTOMAKE([1.15 foreign -Wall])
+
+# Checks for programs.
+AC_PROG_CC([mpicc])
+
+# Checks for libraries.
+AC_CHECK_LIB([m], [log2])
+AC_CHECK_LIB([m], [max])
+AC_CHECK_LIB([z], [inflate])
+AC_CHECK_LIB([crypto], [MD5_Init])
+AC_CHECK_LIB([crypto], [MD5_Update])
+AC_CHECK_LIB([crypto], [MD5_Final])
+
+# Checks for library functions.
+AC_CHECK_FUNCS([malloc_trim])
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT

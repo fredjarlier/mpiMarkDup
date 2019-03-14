@@ -1,0 +1,467 @@
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:tsearch
+   fun:check_add_mapping
+   fun:sem_open
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:check_add_mapping
+   fun:sem_open
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:writeSam
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:tsearch
+   fun:check_add_mapping
+   fun:sem_open
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:writeSam
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:check_add_mapping
+   fun:sem_open
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:mca_base_component_repository_open
+   fun:mca_base_component_find
+   fun:mca_base_framework_components_register
+   fun:mca_base_framework_register
+   fun:mca_base_framework_open
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:main
+}
+
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:writeSam
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:opal_hwloc1117_hwloc_bitmap_alloc
+   fun:orte_ess_base_proc_binding
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:writeSam_any_dim
+   fun:parallel_sort_any_dim
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   fun:mca_io_base_file_select
+   fun:ompi_file_open
+   fun:PMPI_File_open
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:strdup
+   fun:opal_output_open
+   fun:pml_v_output_open
+   fun:mca_pml_v_component_open
+   fun:mca_base_framework_components_open
+   fun:mca_pml_base_open
+   fun:mca_base_framework_open
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:_dlerror_run
+   fun:dlopen@@GLIBC_2.2.5
+   fun:dlopen_open
+   fun:mca_base_component_repository_open
+   fun:mca_base_component_find
+   fun:mca_base_framework_components_register
+   fun:mca_base_framework_register
+   fun:mca_base_framework_open
+   fun:opal_init
+   fun:orte_init
+   fun:ompi_mpi_init
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:evthread_posix_lock_alloc
+   fun:opal_libevent2022_event_global_setup_locks_
+   fun:opal_libevent2022_evthread_use_pthreads
+   fun:opal_event_base_open
+   fun:mca_base_framework_open
+   fun:opal_init
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:evthread_posix_lock_alloc
+   fun:opal_libevent2022_evsig_global_setup_locks_
+   fun:opal_libevent2022_event_global_setup_locks_
+   fun:opal_libevent2022_evthread_use_pthreads
+   fun:opal_event_base_open
+   fun:mca_base_framework_open
+   fun:opal_init
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:evthread_posix_lock_alloc
+   fun:opal_libevent2022_evutil_secure_rng_global_setup_locks_
+   fun:opal_libevent2022_event_global_setup_locks_
+   fun:opal_libevent2022_evthread_use_pthreads
+   fun:opal_event_base_open
+   fun:mca_base_framework_open
+   fun:opal_init
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:orte_init
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   fun:event_process_active_single_queue
+   fun:event_process_active
+   fun:opal_libevent2022_event_base_loop
+   obj:*
+   fun:start_thread
+   fun:clone
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   fun:event_process_active_single_queue
+   fun:event_process_active
+   fun:opal_libevent2022_event_base_loop
+   obj:*
+   fun:start_thread
+   fun:clone
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   fun:event_persist_closure
+   fun:event_process_active_single_queue
+   fun:event_process_active
+   fun:opal_libevent2022_event_base_loop
+   obj:*
+   fun:start_thread
+   fun:clone
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: indirect
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:event_process_active_single_queue
+   fun:event_process_active
+   fun:opal_libevent2022_event_base_loop
+   obj:*
+   fun:start_thread
+   fun:clone
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:ompi_hook_base_open
+   fun:mca_base_framework_open
+   fun:ompi_mpi_init
+   fun:PMPI_Init
+   fun:main
+}
+{
+   MPI_supp
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   fun:event_process_active_single_queue
+   fun:event_process_active
+   fun:opal_libevent2022_event_base_loop
+   obj:*
+   fun:start_thread
+   fun:clone
+}
