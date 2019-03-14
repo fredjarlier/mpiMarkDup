@@ -1,10 +1,32 @@
+/*
+   mpiSORT
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   mpiSORT is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   mpiSORT is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser Public License
+   along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+   Module:
+     llist.c
+     
+   Authors:
+    Frederic Jarlier,   Institut Curie
+    Firmain Martin,     Paris Descartes University
+*/
 
 #include "mpiMD_utils.h"
 
 
 /**
  * @date 2018 Feb 26
- * @author Firmin Martin
  * @brief convert a digit (0-9) to char
  * @param[in] n {0, ..., 9}
  * @return the corresponding char
@@ -34,7 +56,6 @@ void printRead(readInfo *read) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief allocate a line of sam and step forward offset
  *   @param[in, out] offset offset in text
  *   @param[in] text text we parse
@@ -68,7 +89,6 @@ int getLine(char **offset, char *text, char **tokenLine) {
 
 /**
  *   @date 2018 Feb 26
- *   @author Firmin Martin
  *   @brief allocate a token delimited by tab and step forward offset
  *   @param[in, out] offset offset in text
  *   @param[in] text text we parse
@@ -128,7 +148,6 @@ inline void switchBits(unsigned int *x, int k, int j){
 
 /**
  *   @date 2018 Mar 30
- *   @author Firmin Martin
  *   @brief string appending, return concatenated string end
  *   @param[in] dest destination pointer
  *   @param[in] src source pointer
