@@ -18,8 +18,8 @@
     mark_duplicates.c
 
    Authors:
-    Frederic Jarlier,   Institut Curie
-    Firmin Martin,      Paris Descartes
+    Frederic Jarlier,                     Institut Curie
+    Firmin Martin (main developer),       Paris Descartes
 */
 
 /**
