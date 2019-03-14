@@ -27,7 +27,7 @@
     Leonor Sirotti,     Institut Curie
     Thomas Magalhaes,   Institut Curie
     Paul Paganiban,     Institut Curie
-    Firmin Martin,     Paris Descartes University
+    Firmin Martin,      Paris Descartes University
 */
 
 #ifdef HAVE_CONFIG_H
@@ -50,9 +50,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <mpi.h>
-
+#include <malloc.h>
 #include "compat.h"
-
 #include "mergeSort.h"
 #include "parser.h"
 #include "preWrite.h"
