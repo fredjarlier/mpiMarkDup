@@ -1,6 +1,6 @@
 /*
    mpiSORT
-   Copyright (C) 2016-2017 Institut Curie / Institut Pasteur
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
 
    mpiSORT is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 
 /*
    Module:
-    createRGList.h
+    createLBList.h
 
    Authors:
     Frederic Jarlier, 	Institut Curie
