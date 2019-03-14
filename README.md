@@ -5,7 +5,7 @@ This is an open project initiated by Institut Curie HPC team and students from P
 
 The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institut. To do that we rely on MPI and C technology.   
 
-The project is still under development and first results are pretty encouraging. We are close to 100% reproducible.
+The project is still under development and first results are encouraging. We are close to 100% reproducible.
 
 The code is a fork from the mpiSORT. We add an extra process (see markduplicate.c) in the loop to manage the marking of duplicates read.
 
@@ -35,7 +35,12 @@ mpirun -n 8 mpiMD sam_file output_dir -q 0 -d 1000 -v 4 <br />
 How it works
 ------------
 
+First the programm sort the reads by genome's coordinates and extract discordant and unmapped (ends and mates) reads. <br />
 
+Second the programm mark the duplicates for each chromosoms ans discordant reads. The unmapped are not marked.
+To limit memory overhead we build a distributed perfect hash table to build fragment liste and end list. So the memory usage stay very low.  <br />
+
+Finally each chromosom is compressed and writen in the output folder.
 
 
 
