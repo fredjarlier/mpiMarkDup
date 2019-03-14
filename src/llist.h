@@ -1,3 +1,28 @@
+/*
+   mpiSORT
+   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   mpiSORT is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   mpiSORT is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser Public License
+   along with mpiSORT.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+   Module:
+     llist.h
+     
+   Authors:
+    Frederic Jarlier,   Institut Curie
+    Firmain Martin,     Paris Descartes University
+*/
+
+
 #ifndef LLIST_H
 #define LLIST_H 
 #include <stdio.h>
@@ -10,7 +35,6 @@
 /**
  * @file llist.h
  * @brief Circular doubly linked list definition and basic operations
- * @author Firmin Martin 
  * @version 0.1
  * @date 01/01/2018
  */
