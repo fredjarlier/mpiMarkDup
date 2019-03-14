@@ -3,7 +3,7 @@ MPI and C based programm of marking duplicates for Next Generation Sequencing te
 
 This is an open project initiated by Institut Curie HPC team and students from Paris Descartes University.
 
-The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on MPI and C technology.   
+The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on MPI and C technology and parallel algorithms.   
 
 The project is still under development and first results are encouraging. We are close to 100% reproducible.
 
