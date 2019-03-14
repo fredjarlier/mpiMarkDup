@@ -11,9 +11,9 @@ The code is a fork from the mpiSORT. We add an extra process (see markduplicate.
 
 requirements
 ------------
-gcc > 4.8 \n
-openmpi \n
-openssl \n
+gcc > 4.8 
+openmpi 
+openssl 
 
 
 How to compile:
