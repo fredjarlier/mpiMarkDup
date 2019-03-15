@@ -1,5 +1,5 @@
 # mpiMarkDup
-MPI and C based programm of marking duplicates for Next Generation Sequencing technology.  
+MPI and C based program of marking duplicates for Next Generation Sequencing technology.  
 
 This is an open project initiated by Institut Curie HPC team and students from Paris Descartes University.
 
@@ -46,11 +46,11 @@ mpirun -n 8 mpiMD sam_file output_dir -q 0 -d 1000 -v 4 <br />
 How it works
 ------------
 
-First the programm sort the reads by genome's coordinates and extract discordant and unmapped (end and mate) reads with the same technics describe in mpiSORT. <br />
+First the programm sort the reads by genome's coordinates and extract discordant and unmapped (end and mate) reads with the same technics described in mpiSORT. <br />
 
-Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mate are not marked. To limit memory overhead we build a distributed perfect hash table for fragment list and end list. This way the memory usage stay low.  <br />
+Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mate are not marked. To limit memory overhead we build a distributed perfect hash table for fragment list and end list. This way the memory usage stays low.  <br />
 
-Finally each chromosom is compressed with bgzf and writen down in the output folder.
+Finally each chromosom is compressed with bgzf and written down in the output folder.
 
 
 
