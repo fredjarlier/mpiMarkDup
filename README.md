@@ -17,7 +17,7 @@ Release 1.0 from the 16/03/2019 <br />
 1) cleaning of the code <br />
 2) we forgot to write unmapped in previous release <br />
 3) update the overlap coordinates algorithm <br />
-4) to come : a singularity definition file for Centos7 and Redhat, scalability abd reproducibility tests  
+4) to come : a singularity definition file for Centos7 and Redhat, scalability abd reproducibility tests, update of bgzf    
 
 
 requirements
