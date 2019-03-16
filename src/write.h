@@ -66,7 +66,8 @@ void writeSam(
 		int *original_rank_source_offset_phase1,
 		char* data,
 		size_t offset_data_in_file,
-		size_t original_local_readNum
+		size_t original_local_readNum,
+		size_t final_local_readNum
 		);
 
 

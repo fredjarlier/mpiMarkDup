@@ -1,6 +1,6 @@
 /*
    mpiSORT
-   Copyright (C) 2016-2019 Institut Curie / Institut Pasteur
+   Copyright (C) 2016-2017 Institut Curie / Institut Pasteur
 
    mpiSORT is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -501,7 +501,8 @@ void writeSam(
     int *source_rank_phase1,
     char *data,
     size_t start_offset_in_file,
-    size_t previous_local_readNum
+    size_t previous_local_readNum,
+    size_t final_local_readNum
 ) {
 
 
@@ -539,6 +540,7 @@ void writeSam(
     int master_job_phase_1 = master_rank;
     int master_job_phase_2 = master_rank;
 
+ 
     MPI_Status status;
 
     /*
@@ -768,10 +770,10 @@ void writeSam(
      * we do it with a Bruck
      */
 
-    int *new_local_reads_sizes_sorted_bruck         = malloc(previous_local_readNum * sizeof(int));
-    int *new_local_reads_dest_rank_sorted_bruck     = malloc(previous_local_readNum * sizeof(int));
-    size_t *new_local_offset_destination_bruck      = malloc(previous_local_readNum * sizeof(size_t));
-    size_t *new_local_offset_source_sorted_bruck    = malloc(previous_local_readNum * sizeof(size_t));
+    int *new_local_reads_sizes_sorted_bruck         	= malloc(previous_local_readNum * sizeof(int));
+    int *new_local_reads_dest_rank_sorted_bruck     	= malloc(previous_local_readNum * sizeof(int));
+    size_t *new_local_offset_destination_bruck      	= malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_local_offset_source_sorted_bruck    	= malloc(previous_local_readNum * sizeof(size_t));
 
     int num_proc = dimensions;
     size_t *number_of_reads_by_procs = calloc( dimensions, sizeof(size_t));
@@ -891,18 +893,18 @@ void writeSam(
     base_arr2 = new_local_offset_source_sorted_bruck;
     qksort(coord_index, previous_local_readNum, sizeof(size_t), 0, previous_local_readNum - 1, compare_size_t);
 
-    int *new_local_reads_sizes_sorted_bruck2        = malloc(previous_local_readNum * sizeof(int));
-    int *new_local_reads_dest_rank_sorted_bruck2    = malloc(previous_local_readNum * sizeof(int));
-    size_t *new_local_offset_destination_bruck2     = malloc(previous_local_readNum * sizeof(size_t));
-    size_t *new_local_offset_source_sorted_bruck2   = malloc(previous_local_readNum * sizeof(size_t));
+    int *new_local_reads_sizes_sorted_bruck2        	= malloc(previous_local_readNum * sizeof(int));
+    int *new_local_reads_dest_rank_sorted_bruck2      = malloc(previous_local_readNum * sizeof(int));
+    size_t *new_local_offset_destination_bruck2     	= malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_local_offset_source_sorted_bruck2     = malloc(previous_local_readNum * sizeof(size_t));
 
     //We index data
     for (j = 0; j < previous_local_readNum; j++) {
 
-        new_local_reads_sizes_sorted_bruck2[j]          = new_local_reads_sizes_sorted_bruck[coord_index[j]];
+        new_local_reads_sizes_sorted_bruck2[j]           	= new_local_reads_sizes_sorted_bruck[coord_index[j]];
         new_local_reads_dest_rank_sorted_bruck2[j]      = new_local_reads_dest_rank_sorted_bruck[coord_index[j]];
-        new_local_offset_destination_bruck2 [j]         = new_local_offset_destination_bruck[coord_index[j]];
-        new_local_offset_source_sorted_bruck2[j]        = new_local_offset_source_sorted_bruck[coord_index[j]];
+        new_local_offset_destination_bruck2 [j]         	= new_local_offset_destination_bruck[coord_index[j]];
+        new_local_offset_source_sorted_bruck2[j]        	= new_local_offset_source_sorted_bruck[coord_index[j]];
     }
 
     free(new_local_offset_source_sorted_bruck);
@@ -1149,13 +1151,17 @@ void writeSam(
     for (m = 0; m < num_proc; m++) {
         sum_num_of_reads += number_of_reads_by_procs[m];
     }
+    //md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] sum_num_of_reads   = %zu s \n", sum_num_of_reads);
+    //md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] previous_local_readNum   = %zu s \n", previous_local_readNum);
+    //md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] final_local_readNum   = %zu s \n", final_local_readNum);
+    assert(final_local_readNum == sum_num_of_reads);
 
-    assert(previous_local_readNum == sum_num_of_reads);
+    previous_local_readNum = final_local_readNum;
 
-    size_t *new_offset_dest_index_phase3    = malloc(sizeof(size_t) * previous_local_readNum);
-    char  **data_reads_to_sort              = malloc(previous_local_readNum * sizeof(char *));
-    int *data_size_to_sort                  = malloc(previous_local_readNum * sizeof(int));
-    size_t *data_offsets_to_sort            = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_offset_dest_index_phase3     = malloc(sizeof(size_t) * previous_local_readNum);
+    char  **data_reads_to_sort              		= malloc(previous_local_readNum * sizeof(char *));
+    int *data_size_to_sort                  			= malloc(previous_local_readNum * sizeof(int));
+    size_t *data_offsets_to_sort            		= malloc(previous_local_readNum * sizeof(size_t));
 
     /*
      * GET DATA AFTER BRUCK
@@ -1180,7 +1186,7 @@ void writeSam(
         j += number_of_reads_by_procs[m];
     }
 
-    assert(j == previous_local_readNum);
+    assert(j == final_local_readNum);
 
     /*
      *
@@ -1250,6 +1256,24 @@ void writeSam(
 
     free(new_offset_dest_index_phase3);
     free(data_reads_to_sort);
+
+
+    /*
+     * FOR DEBUG
+     *
+     *
+   if (rank == 7){
+		char *p101 = char_buff_uncompressed +size_t_buffer_uncompressed - 500;                
+                 fprintf(stderr, "rank %d :::::[MPISORT] last lines %s  \n", rank, p101 );
+	} 
+
+      if (rank == 8){
+		char *p102 = char_buff_uncompressed;
+		int count001 = 0;                
+                fprintf(stderr, "rank %d :::::[MPISORT] first lines =", rank );
+		while (count001 < 1500){fprintf(stderr, "%c", *p102 ); p102++; count001++;}
+	} 
+    */
 
     char *char_buff_uncompressed_with_duplicates = NULL;
     char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, previous_local_readNum, header, split_comm);

@@ -1638,8 +1638,8 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
 
     kh_destroy(read, hash);
 
-    md_log_debug("Ensure reads mate rank which are susceptible in multiple processes ...\n");
-    ensureMateRank(*readArr, intervalByProc, readNum, comm);
+    //md_log_debug("Ensure reads mate rank which are susceptible in multiple processes ...\n");
+    //ensureMateRank(*readArr, intervalByProc, readNum, comm);
 
     free(bufferReads);
     assert(readCounter - readIndex == readNum);
@@ -1828,7 +1828,7 @@ Interval getIntervalFromBuffer(char *bufferReads, size_t readNum) {
     } else {
         interval.lastCoord = interval.firstCoord;
     }
-
+    
     assert(interval.firstCoord <= interval.lastCoord);
     return interval;
 }
