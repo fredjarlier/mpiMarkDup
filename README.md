@@ -1,13 +1,14 @@
 # mpiMarkDup
+
 MPI and C based program of marking duplicates for Next Generation Sequencing technology.  
 
+The code is a fork from the mpiSORT project. We add a process to manage the marking of duplicates read.
+
+The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on low level  technology and parallel algorithms.   
+
+The project is still under development so feel free to test it and report.
+
 This is an open project initiated by Institut Curie HPC team and students from Paris Descartes University.
-
-The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on MPI and C technology and parallel algorithms.   
-
-The project is still under development and first results are encouraging.
-
-The code is a fork from the mpiSORT. We add an extra process in the loop to manage the marking of duplicates read.
 
 Release notes 
 -------------
@@ -27,8 +28,8 @@ openmpi <br />
 openssl <br />
 automake-1.15 <br />
 autoconf-2.69 <br />
-cmocka (optionnal and only for for unit testing)
-A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format.  
+cmocka (optionnal and only for for unit testing) <br />
+A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format. <br /> 
  
 How to compile:
 --------------
