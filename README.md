@@ -31,6 +31,9 @@ autoconf-2.69 <br />
 cmocka (optionnal and only for for unit testing) <br />
 A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format. <br /> 
  
+For small test a laptop is sufficient. <br />
+For real life test a HPC cluster is a mandatory. <br />
+
 How to compile:
 --------------
 aclocal <br />
