@@ -16,8 +16,8 @@ Release 1.0 from the 16/03/2019 <br />
 
 1) cleaning of the code <br />
 2) we forgot to write unmapped in previous release <br />
-3) update the overlap coordinates algorithm <br />
-4) to come : a singularity definition file, tests of scalability abd reproducibility, upgrade of compression algorithm.    
+3) update of the overlapped coordinates between rank algorithm <br />
+4) next step : a singularity definition file, more tests and profiling, upgrade of compression algorithm. <br />   
 
 
 requirements
@@ -27,7 +27,7 @@ openmpi <br />
 openssl <br />
 automake-1.15 <br />
 autoconf-2.69 <br />
-cmocka (for unit testing)
+cmocka (optionnal and only for for unit testing)
 A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format.  
  
 How to compile:
@@ -43,9 +43,11 @@ make clean <br />
 How to test it
 -------------
 
-mpirun -n cpu_number mpiMD input_sam_file output_dir -q 0 -d 1000 -v 4 <br />
+mpirun -n cpu_number mpiMD input_sam output_dir -q 0 -d 1000 -v 4 <br />
 
-(it's better if cpu_number is a power of 2)
+(it's better if cpu_number is a power of 2) <br />
+
+options are: <br />
 
 -q is for quality filtering <br />
 -d is for optical distance duplicate <br />
