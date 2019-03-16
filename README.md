@@ -7,7 +7,7 @@ The goal is to create a distributed and (near) real time version of the well kno
 
 The project is still under development and first results are encouraging.
 
-The code is a fork from the mpiSORT. We add an extra process (see perfectHash.c for details) in the loop to manage the marking of duplicates read.
+The code is a fork from the mpiSORT. We add an extra process in the loop to manage the marking of duplicates read.
 
 Release notes 
 -------------
@@ -17,7 +17,7 @@ Release 1.0 from the 16/03/2019 <br />
 1) cleaning of the code <br />
 2) we forgot to write unmapped in previous release <br />
 3) update the overlap coordinates algorithm <br />
-4) to come : a singularity definition file for Centos7 and Redhat, scalability abd reproducibility tests, update of bgzf    
+4) to come : a singularity definition file, tests of scalability abd reproducibility, upgrade of compression algorithm.    
 
 
 requirements
@@ -28,7 +28,8 @@ openssl <br />
 automake-1.15 <br />
 autoconf-2.69 <br />
 cmocka (for unit testing)
-
+A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format.  
+ 
 How to compile:
 --------------
 aclocal <br />
@@ -61,10 +62,24 @@ How it works
 
 First the programm sort the reads by genome's coordinates and extract discordant and unmapped (end and mate) reads with the same technic described in mpiSORT. <br />
 
-Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mate are not marked. To limit memory overhead we build a distributed perfect hash table for fragment list and end list. This way the memory usage stays low.  <br />
+Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mates are not marked. To limit memory overhead we build a distributed perfect hash table (see perfectHash.c for details) for fragment list and end list. This way the memory usage stays low.  <br />
 
 Finally each chromosom is compressed with bgzf and written down in the output folder.
 
 
+Authors and contacts
+--------------------
 
+This program has been developed by<br />
+
+Frederic Jarlier from Institut Curie and Firmin Martin from Paris Decartes University for marking of duplicates part<br />
+
+and supervised by <br />
+
+Philippe Hupe from Institut Curie <br />
+
+Contacts: <br />
+
+frederic.jarlier@curie.fr <br />
+philippe.hupe@curie.fr <br />
 
