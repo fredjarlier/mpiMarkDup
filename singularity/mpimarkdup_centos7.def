@@ -1,0 +1,61 @@
+Bootstrap: docker
+From: centos:7
+Include: yum
+ 
+#
+# tested with singularity 2.6.1
+# How to build: sudo singularity mpimarkdup_centos7.simg mpimarkdup_centos7.def
+#
+
+%post 
+    
+    yum -y update
+    yum -y install yum-utils
+    yum -y install cmake autotools m4 git openssl-devel sudo     
+    yum -y install libmpc-devel mpfr-devel gmp-devel
+    yum -y group install "Development Tools" 
+    yum -y install git
+
+    echo "Installing gcc 7" 
+    yum -y install centos-release-scl
+    yum -y install devtoolset-7-gcc*
+    scl enable devtoolset-7 bash
+
+    echo "Installing autoconf 2.69" 
+    cd /opt
+    curl -L -O http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+    tar zxf autoconf-2.69.tar.gz
+    cd autoconf-2.69
+    ./configure --prefix=/usr && make && make install && make clean
+
+    echo "Installing automake 1.15" 
+    cd /opt
+    curl -L -O http://ftp.gnu.org/gnu/automake/automake-1.15.tar.gz
+    tar zxf automake-1.15.tar.gz
+    cd automake-1.15
+    ./configure --prefix=/usr && make && make install && make clean
+    
+    echo "Installing OpenMPI into container..." 
+    cd /opt
+    curl -L -O https://download.open-mpi.org/release/open-mpi/v1.10/openmpi-1.10.7.tar.gz
+    tar zxf openmpi-1.10.7.tar.gz
+    cd openmpi-1.10.7
+    ./configure --prefix=/usr CC=/opt/rh/devtoolset-7/root/usr/bin/gcc && make && make install
+
+    ldconfig
+    cd /opt
+    git clone https://github.com/fredjarlier/mpiMarkDup.git
+    cd mpiMarkDup
+    aclocal
+    autoconf
+    autoreconf
+    automake --add-missing
+    ./configure --prefix=/usr CC=/usr/bin/mpicc 
+    make && make install && make clean
+
+%environment
+    LANG=en_US.UTF
+    LC_ALL=en_US.UTF-8
+    export LANG LC_ALL
+    source scl_source enable devtoolset-7
+    
