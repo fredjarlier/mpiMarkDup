@@ -1,6 +1,7 @@
 /*
    mpiSORT
    Copyright (C) 2016-2017 Institut Curie / Institut Pasteur
+   Copyright (C) 2018-2019 Institut Curie
 
    mpiSORT is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -27,6 +28,7 @@
     Leonor Sirotti,     Institut Curie
     Thomas Magalhaes,   Institut Curie
     Paul Paganiban,     Institut Curie
+    Firmin Martin,		Paris Descartes University
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1880,20 +1882,23 @@ int main (int argc, char *argv[]) {
 
 static void usage(const char *prg) {
 
-    fprintf(stderr, "Program: MPI version for sorting aligned FASTQ data\n"
+    fprintf(stderr, "Program: MPI version for sorting and marking duplicates of paired aligned FASTQ data\n"
             "Version: v%s\n"
             "Contact 1: Frederic Jarlier (frederic.jarlier@curie.fr) \n"
-            "usage : mpirun -n TOTAL_PROC %s FILE_TO_SORT OUTPUT_FILE -q QUALITY \n"
-            "output : a gz files per chromosome, a gz file of unmapped reads \n"
-            "                 a gz files of discordants reads. \n"
+            "usage : mpirun -n TOTAL_PROC %s FILE_TO_SORT OUTPUT_FOLDER -q QUALITY -d OPTICAL_DISTANCE -v VERBOSE\n"
+            "TOTAL_PROC should be a power of 2.\n"
+            "OPTICAL_DISTANCE is 0 by default\n"
+            "VERBOSE is the log file severity (4 by default)\n"
+            "OUTPUT_FOLDER : a gz files per chromosome, a gz file of unmapped reads \n"
+            "a gz files of discordants reads. \n"
             "Discordants reads are reads where one pairs align on a chromosome \n"
             "and the other pair align on another chromosome \n"
             "Unmapped reads are reads without coordinates on any genome \n"
-            "Requirements : automake 1.15, autoconf 2.69 and a MPI compiler"
+            "Requirements : gcc > 4.8, automake 1.15, autoconf 2.69 and a MPI compiler\n"
             ""
             ""
             "For perfomances matters the file you want to sort could be \n"
-            "stripped on parallel file system. \n"
+            "stripped on a parallel file system. \n"
             "With Lustre you mention it with lfs setstripe command like this \n"
             "lfs set stripe -c stripe_number -s stripe_size folder           \n"
             , VERSION, prg);
