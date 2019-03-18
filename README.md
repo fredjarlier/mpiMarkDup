@@ -4,7 +4,7 @@ MPI and C based program of marking duplicates for Next Generation Sequencing tec
 
 The code is a fork from the mpiSORT project. We add a process to manage the marking of duplicates read.
 
-The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on low level  technology and parallel algorithms.   
+The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on low level  technologies and parallel algorithms.   
 
 The project is still under development so feel free to test it and report.
 
@@ -31,8 +31,8 @@ autoconf-2.69 <br />
 cmocka (optionnal and only for for unit testing) <br />
 A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format. <br /> 
  
-For small test a laptop is sufficient. <br />
-For real life test a HPC cluster is a mandatory. <br />
+For small tests a laptop is sufficient. <br />
+For real life test a HPC cluster with low latency network and parallel file system is a mandatory. <br />
 
 How to compile:
 --------------
@@ -66,11 +66,11 @@ options are: <br />
 How it works
 ------------
 
-First the programm sort the reads by genome's coordinates and extract discordant and unmapped (end and mate) reads with the same technic described in mpiSORT. <br />
+First the programm sort the reads by genome's coordinates and extract discordant and unmapped (end and mate) reads with the same technics described in mpiSORT. <br />
 
-Second the programm mark the duplicates for each chromosom ans discordant reads according to Picard Markduplicate method. The unmapped and unmapped mates are not marked. To limit memory overhead we build a distributed perfect hash table (see perfectHash.c for details) for fragment list and end list. This way the memory usage stays low.  <br />
+Second the programm mark the duplicates for each chromosome and discordant reads according to Picard Markduplicate method. The unmapped and unmapped mates are not marked. To limit memory overhead we build a distributed perfect hash table (see perfectHash.c for details) for fragment list and end list. This way the memory usage is under the memory usage of mpiSort.  <br />
 
-Finally each chromosom is compressed with bgzf and written down in the output folder.
+Finally each chromosome is marked and compressed with bgzf and written down in the output folder.
 
 
 Authors and contacts
