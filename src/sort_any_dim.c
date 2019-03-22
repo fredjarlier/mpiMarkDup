@@ -654,8 +654,9 @@ void parallel_sort_any_dim(
 
 	size_t *local_dest_offsets_sorted 		= malloc(sizeof(size_t)*local_readNum);
 	size_t *local_source_offsets_sorted 	= malloc(sizeof(size_t)*local_readNum);
-	int *local_read_size_sorted 			= malloc(sizeof(size_t)*local_readNum);
-	int *local_rank_sorted 					= malloc(sizeof(size_t)*local_readNum);
+	size_t *local_coordinates_sorted 		= malloc(sizeof(size_t)*local_readNum);
+ 	int *local_read_size_sorted 			= malloc(sizeof(int)*local_readNum);
+	int *local_rank_sorted 					= malloc(sizeof(int)*local_readNum);
 
 	/*
 	 * now we dispatch all_offset_dest
@@ -669,8 +670,10 @@ void parallel_sort_any_dim(
 		//fprintf(stderr, "%d ::::: [send_size_t_master_to_all] rank %d recv %zu from %d \n",rank, rank, size, master);
 		MPI_Recv(local_dest_offsets_sorted, local_readNum, MPI_LONG_LONG_INT, chosen_split_rank, 0, split_comm, MPI_STATUS_IGNORE);
 		MPI_Recv(local_source_offsets_sorted, local_readNum, MPI_LONG_LONG_INT, chosen_split_rank, 1, split_comm, MPI_STATUS_IGNORE);
-		MPI_Recv(local_read_size_sorted, local_readNum, MPI_INT, chosen_split_rank, 2, split_comm, MPI_STATUS_IGNORE);
-		MPI_Recv(local_rank_sorted, local_readNum, MPI_INT, chosen_split_rank, 3, split_comm, MPI_STATUS_IGNORE);
+		MPI_Recv(local_coordinates_sorted, local_readNum, MPI_LONG_LONG_INT, chosen_split_rank, 2, split_comm, MPI_STATUS_IGNORE);
+		MPI_Recv(local_read_size_sorted, local_readNum, MPI_INT, chosen_split_rank, 3, split_comm, MPI_STATUS_IGNORE);
+		MPI_Recv(local_rank_sorted, local_readNum, MPI_INT, chosen_split_rank, 4, split_comm, MPI_STATUS_IGNORE);
+
 	}
 	else {
 		size_t k=0;
@@ -680,6 +683,7 @@ void parallel_sort_any_dim(
 
 			local_dest_offsets_sorted[k] 	= all_offset_dest_sorted[ind];
 			local_source_offsets_sorted[k] 	= all_offsets_sources_sorted[ind];
+			local_coordinates_sorted[k] 	= all_reads_coordinates_sorted[ind];
 			local_read_size_sorted[k] 		= all_reads_size_sorted[ind];
 			local_rank_sorted[k] 			= all_reads_rank_sorted[ind];
 
@@ -697,11 +701,14 @@ void parallel_sort_any_dim(
 				MPI_Send(&all_offsets_sources_sorted[start_num_reads_per_jobs[j]],
 						num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 1, split_comm);
 
+				MPI_Send(&all_reads_coordinates_sorted[start_num_reads_per_jobs[j]],
+						num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 2, split_comm);
+
 				MPI_Send(&all_reads_size_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_INT, j, 2, split_comm);
+						num_reads_per_jobs[j], MPI_INT, j, 3, split_comm);
 
 				MPI_Send(&all_reads_rank_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_INT, j, 3, split_comm);
+						num_reads_per_jobs[j], MPI_INT, j, 4, split_comm);
 
 			}
 		}
@@ -752,6 +759,7 @@ void parallel_sort_any_dim(
 			compression_level,
 			local_dest_offsets_sorted,
 			local_source_offsets_sorted,
+			local_coordinates_sorted,
 			local_read_size_sorted,
 			local_rank_sorted,
 			local_data,

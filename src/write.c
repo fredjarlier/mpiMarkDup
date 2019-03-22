@@ -1959,6 +1959,7 @@ void writeSam_any_dim(
     int compression_level,
     size_t *new_offset_dest,
     size_t *new_offset_source,
+    size_t *new_coordinates,
     int *new_read_size,
     int *new_rank,
     char *data,
@@ -2106,6 +2107,7 @@ void writeSam_any_dim(
     //vector of all offset in destination / source file / size of reads / ranks
     size_t *all_offset_dest_file_phase1     = NULL;
     size_t *all_offset_source_file_phase1   = NULL;
+    size_t *all_coordinates_phase1          = NULL;
     int *all_read_size_phase1               = NULL;
     int *all_rank_phase1                    = NULL;
 
@@ -2127,6 +2129,7 @@ void writeSam_any_dim(
     if (rank == master_job_phase_1) {
         all_offset_dest_file_phase1     = malloc (total_num_read_phase1 * sizeof(size_t));
         all_offset_source_file_phase1   = malloc (total_num_read_phase1 * sizeof(size_t));
+        all_coordinates_phase1          = malloc (total_num_read_phase1 * sizeof(size_t));
         all_read_size_phase1            = malloc (total_num_read_phase1 * sizeof(int));
         all_rank_phase1                 = malloc (total_num_read_phase1 * sizeof(int));
 
@@ -2135,6 +2138,7 @@ void writeSam_any_dim(
         for (k = 0; k < total_num_read_phase1; k++) {
             all_read_size_phase1[k]             = 0;
             all_offset_dest_file_phase1[k]      = 0;
+            all_coordinates_phase1[k]           = 0;      
             all_offset_source_file_phase1[k]    = 0;
             all_rank_phase1[k]                  = 0;
         }
@@ -2188,6 +2192,7 @@ void writeSam_any_dim(
 
             all_offset_dest_file_phase1[st]     = new_offset_dest[k];
             all_offset_source_file_phase1[st]   = new_offset_source[k];
+            all_coordinates_phase1[st]          = new_coordinates[k];
             all_read_size_phase1[st]            = new_read_size[k];
             all_rank_phase1[st]                 = new_rank[k];
             st++;
@@ -2202,11 +2207,13 @@ void writeSam_any_dim(
                 int *temp_buf1      = malloc(num_reads_per_jobs_phase1[j] * sizeof(int));
                 size_t *temp_buf2   = malloc(num_reads_per_jobs_phase1[j] * sizeof(size_t));
                 size_t *temp_buf3   = malloc(num_reads_per_jobs_phase1[j] * sizeof(size_t));
+                size_t *temp_buf4   = malloc(num_reads_per_jobs_phase1[j] * sizeof(size_t));
 
                 MPI_Recv(temp_buf, num_reads_per_jobs_phase1[j], MPI_INT, j, 0, COMM_WORLD, &status);
                 MPI_Recv(temp_buf1, num_reads_per_jobs_phase1[j], MPI_INT, j, 1, COMM_WORLD, &status);
                 MPI_Recv(temp_buf2, num_reads_per_jobs_phase1[j], MPI_LONG_LONG_INT, j, 2, COMM_WORLD, &status);
                 MPI_Recv(temp_buf3, num_reads_per_jobs_phase1[j], MPI_LONG_LONG_INT, j, 3, COMM_WORLD, &status);
+                MPI_Recv(temp_buf4, num_reads_per_jobs_phase1[j], MPI_LONG_LONG_INT, j, 4, COMM_WORLD, &status);
 
                 st = 0;
                 size_t st = start_num_reads_per_jobs_phase1[j];
@@ -2217,6 +2224,7 @@ void writeSam_any_dim(
                     all_read_size_phase1[st]            = temp_buf1[k];
                     all_offset_source_file_phase1[st]   = temp_buf2[k];
                     all_offset_dest_file_phase1[st]     = temp_buf3[k];
+                    all_coordinates_phase1[st]          = temp_buf4[k];
                     st++;
                 }
 
@@ -2224,6 +2232,7 @@ void writeSam_any_dim(
                 free(temp_buf1);
                 free(temp_buf2);
                 free(temp_buf3);
+                free(temp_buf4);
             }
         }
 
@@ -2232,6 +2241,7 @@ void writeSam_any_dim(
         MPI_Send(new_read_size, local_readNum, MPI_INT, master_job_phase_1,  1, COMM_WORLD);
         MPI_Send(new_offset_source, local_readNum, MPI_LONG_LONG_INT, master_job_phase_1,  2, COMM_WORLD);
         MPI_Send(new_offset_dest, local_readNum, MPI_LONG_LONG_INT, master_job_phase_1,  3, COMM_WORLD);
+        MPI_Send(new_coordinates, local_readNum, MPI_LONG_LONG_INT, master_job_phase_1,  4, COMM_WORLD);
     }
 
     if (rank == master_job_phase_1) {
@@ -2241,6 +2251,7 @@ void writeSam_any_dim(
             assert ( all_offset_source_file_phase1[j] != 0 );
             assert ( all_read_size_phase1[j] != 0 );
             assert ( all_rank_phase1[j] <= total_num_proc);
+            assert ( all_coordinates_phase1[j] != 0);
         }
     }
 
@@ -2252,6 +2263,7 @@ void writeSam_any_dim(
     free(new_offset_dest);
     free(new_offset_source);
     free(new_rank);
+    free(new_coordinates);
 
     /*
      * In this section we implement a parallel Bitonic sort
@@ -2494,6 +2506,7 @@ void writeSam_any_dim(
             }
         }
 
+        //we gather the index of destination offset    
         chosen_split_rank_gather_size_t(
             COMM_WORLD,
             rank,
@@ -2527,16 +2540,54 @@ void writeSam_any_dim(
             size_t total = 0;
 
             for (j = 0; j < total_num_proc; j++) {
-
+                
+                size_t index1 = num_reads_per_jobs_phase1[j];
+                for (k = 0; k < index1; k++) {
+                    all_rank_phase1_to_send[total + k] = j;
+                }
                 total += num_reads_per_jobs_phase1[j];
+            }        
+            //we use all_coordinates_phase1 to remove overlap of coordinates 
+            //between rank
+            int previous_rank           = all_rank_phase1_to_send[0];
+            int next_rank               = 0;
+            size_t previous_coordinate  = 0; 
+            size_t current_coordinate   = 0;
+            size_t k5                   = 0;
 
-                for (k = 0; k < num_reads_per_jobs_phase1[j]; k++) {
-                    all_rank_phase1_to_send[start_num_reads_per_jobs_phase1[j] + k] = j;
+            for (k = 1; k < total; k++){
+
+                next_rank = all_rank_phase1_to_send[k];
+                previous_rank = all_rank_phase1_to_send[k-1];
+                                
+                assert( previous_rank <= next_rank);
+                assert( previous_coordinate <= current_coordinate);
+
+                if (next_rank != previous_rank){
+                    
+                    //we get the previous coordinates
+                    previous_coordinate  = all_coordinates_phase1[k-1];
+                    current_coordinate   = all_coordinates_phase1[k];
+
+                    while ( previous_coordinate == current_coordinate ){
+                        //we have overlap we change the destination rank
+                            k5++;
+                            all_rank_phase1_to_send[k] = previous_rank;
+                            //md_log_rank_debug(master_job_phase_2, "[WRITE_ANY_DIM][PHASE 1] k = %zu previous_coordinate = %zu ::: current_coordinate = %zu \n", k, previous_coordinate, current_coordinate);
+                            //md_log_rank_debug(master_job_phase_2, "[WRITE_ANY_DIM][PHASE 1] k = %zu previous_rank = %d ::: next_rank = %d \n", k, previous_rank, next_rank);
+                            k++;
+                            current_coordinate = all_coordinates_phase1[k];
+                       
+                    }
+                    // otherwise we do nothing                    
                 }
             }
+            md_log_rank_debug(master_job_phase_2, "[WRITE_ANY_DIM][PHASE 1] change the destination rank of %zu out of %zu total reads \n", k5, total);            
         } // end if (rank == master_job_phase_1)
-
     } //end if (rank < dimensions)
+
+
+
 
     MPI_Barrier(COMM_WORLD);
 
@@ -2545,8 +2596,6 @@ void writeSam_any_dim(
         free(pbs_local_dest_offset);
         free(pbs_local_dest_offset_index);
         free(all_offset_dest_sorted_index_phase1);
-
-
     }
 
     free(pbs_local_num_read_per_job_phase1);
@@ -2558,6 +2607,7 @@ void writeSam_any_dim(
         free(all_read_size_phase1);
         free(all_rank_phase1);
         free(all_offset_source_file_phase1);
+        free(all_coordinates_phase1);
     }
 
     //  task Phase 1: Dispatch everything
@@ -3167,6 +3217,17 @@ void writeSam_any_dim(
 
     free(start_num_reads_per_jobs_phase2);
     free(num_reads_per_jobs);
+
+
+    /*
+    *  we assing new rank of destination according to 
+    *  overlapped coordinates reads  
+    */
+
+
+
+
+
 
     /***************************************************/
     /*

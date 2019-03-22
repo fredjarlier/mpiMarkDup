@@ -150,6 +150,7 @@ void writeSam_any_dim(
 		int compression_level,
 		size_t* new_offset_dest,
 		size_t* new_offset_source,
+		size_t* new_coordinates_sorted,
 		int* new_read_size,
 		int* new_rank,
 		char *data,
