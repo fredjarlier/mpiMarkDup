@@ -13,6 +13,10 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 22/03/2019 <br />
+
+1) fix the coordinates overlapped between 2 ranks in case we are not power of 2 dimension (again it's better if you are in power of 2 dimension) <br />
+
 Release 1.0 from the 16/03/2019 <br />
 
 1) cleaning of the code <br />
