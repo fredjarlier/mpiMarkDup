@@ -27,11 +27,15 @@ Release 1.0 from the 16/03/2019 <br />
 
 requirements
 ------------
-gcc > 4.8 <br />
-openmpi <br />
-openssl <br />
+
+tested with 
+
+gcc > 4.8 (tested with 7.3) <br />
+openmpi 2.2.1, 4.0 <br />
+openssl 1.1.0g <br />
 automake-1.15 <br />
 autoconf-2.69 <br />
+
 cmocka (optionnal and only for for unit testing) <br />
 A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format. <br /> 
  
