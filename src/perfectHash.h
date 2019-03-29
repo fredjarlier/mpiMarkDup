@@ -69,7 +69,7 @@ typedef struct {
 
 // Utils
 int computeSpace(hashParam hp, int p, readInfo **arr, int size);
-int haveCollision(hashParam hp, int prime, unsigned long long *arr, int size);
+int haveCollision(hashParam hp, int prime, size_t *arr, int size);
 void printPerfectHashTable(hashTable *htbl);
 
 // Conversion
@@ -86,7 +86,7 @@ void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, int size
 void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, int size, MPI_Comm comm) ;
 
 // get element
-readInfo *getReadFromFingerprint(hashTable *htbl, unsigned long long fingerprint);
+readInfo *getReadFromFingerprint(hashTable *htbl, size_t fingerprint);
 readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *QName, int PairNum) ;
 readInfo *getMateFromRead(hashTable *htbl, readInfo *read) ;
 
@@ -95,6 +95,6 @@ void hashTableDestroy(hashTable *htbl);
 void hashTableInsert(hashTable *htbl, readInfo *read) ;
 
 // Hash function
-int univHash(hashParam hp, int p, unsigned long long k);
+int univHash(hashParam hp, int p, size_t k);
 
 #endif

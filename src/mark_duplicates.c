@@ -406,11 +406,20 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 getTokenTab(&q, sam_buff, &tokenCar);
                 read->valueFlag  = atoll(tokenCar);
 
-                unsigned int readUnmapped = readBits((unsigned int)read->valueFlag, 2);
+		unsigned int readUnmapped = readBits((unsigned int)read->valueFlag, 2);
                 unsigned int mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
                 unsigned int readReverseStrand = readBits((unsigned int)read->valueFlag, 4);
                 unsigned int secondaryAlignment = readBits((unsigned int)read->valueFlag, 8);
                 unsigned int supplementaryAlignment = readBits((unsigned int)read->valueFlag, 11);
+
+		/*
+		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: tokenCar = %s \n", read->Qname, tokenCar);
+		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: read->valueFlag = %zu \n", read->Qname, read->valueFlag);
+		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: readUnmapped = %d \n", read->Qname, readUnmapped);
+		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: mateUnmapped = %d \n", read->Qname, mateUnmapped);
+		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: secondaryAlignment = %d \n", read->Qname, secondaryAlignment);
+		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname  = %s ::: supplementaryAlignment = %d \n", read->Qname, supplementaryAlignment);
+		*/
 
                 // https://gatkforums.broadinstitute.org/gatk/discussion/6747/how-to-mark-duplicates-with-markduplicates-or-markduplicateswithmatecigar
                 // secondary and supplementary alignment records are skipped and never flagged as duplicate.
@@ -1259,160 +1268,6 @@ void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
 }
 
 /**
- * @date 2018 Mar 23
- * @brief Determine mate rank and check_with_bruck for read which mate is in multiple proc interval range.
- * @details Algorithm :
- *    1. Fill a request array : if a mate is susceptible to be in multiple rank, send a request to them.
- *    2. Send request (transpose all-to-all matrix)
- *    3. Handle request : search in @p readArr if the mate is there or not
- *    4. Return request (transpose all-to-all matrix)
- *    5. Determine mateRank and check_with_bruck using the result received
- * @param[out] readArr array of read
- * @param[in] intervalByProc coordinate interval
- * @param[in] readNum total amount of read lines
- * @param[in] comm markDuplicate communicator
- * @todo Should optimize naive algorithm (traverse list). This is the bottleneck of communication part.
- *       Some buffers have more reads to check than other. Hence, all processes need to wait for communication.
- */
-
-void ensureMateRank(readInfo **readArr, Interval *intervalByProc, size_t readNum, MPI_Comm comm) {
-    int rank, num_proc;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &num_proc);
-
-    int *scounts = calloc(num_proc, sizeof(int));
-    int *rcounts, *rdispls, *sdispls;
-    int maxUnknown;
-
-    // Count number of read which have check_with_bruck == 2
-    int unknownExternalNum = countExternalMateInArray(readArr, readNum, 2);
-
-    /**
-     * Compute the max among process in communicator.
-     **/
-
-    MPI_Allreduce(&unknownExternalNum, &maxUnknown, 1,  MPI_INT, MPI_MAX, comm);
-
-    /**
-     *  We don't know the distribution of mate to check.
-     *  So we allocate an array which have the following form
-     *
-     *  proc[0] := [0] [1] ... [maxUnknown]
-     *  proc[1] := [0] [1] ... [maxUnknown]
-     *              ...  ...
-     *  proc[num_proc - 1] := [0] [1] ... [maxUnknown]
-     *
-     * */
-
-    CMInfo *sendCMArr = malloc(maxUnknown * num_proc * sizeof(CMInfo));
-
-    /**
-     * Fill CMinfo by mates to check.
-     * Illustration :
-     *
-     * read->coordMatePos := 1081
-     *
-     * intervalByProc[0].firstCoord = 1000, intervalByProc[0].lastCoord = 1032
-     * intervalByProc[1].firstCoord = 1035, intervalByProc[1].lastCoord = 1081
-     * intervalByProc[2].firstCoord = 1081, intervalByProc[2].lastCoord = 1132
-     *
-     * In this case, we request to rank 1 and 2 to check if they have its mate.
-     * */
-
-    for (int i = 0;  i < readNum; i++) {
-        if (readArr[i] && readArr[i]->check_with_bruck == 2) {
-            for (int j = 0; j < num_proc; j++) {
-                // Check critical coordinates
-                if (readArr[i]->coordMatePos == intervalByProc[j].firstCoord || readArr[i]->coordMatePos == intervalByProc[j].lastCoord) {
-                    int index = j * maxUnknown + scounts[j];
-
-                    // Fill CMinfo with mateRank = -1 and mate's fingerprint.
-                    sendCMArr[index] = read2CM(readArr[i]);
-                    scounts[j]++;
-                }
-            }
-        }
-    }
-
-    int totalReceived = computeCountAndDispl(scounts, &sdispls, &rcounts, &rdispls, comm);
-
-    // Since array is partially full, we make data contiguous
-    for (int i = 0; i < num_proc; i++) {
-        memmove(sendCMArr + sdispls[i], sendCMArr + i * maxUnknown, scounts[i] * sizeof(CMInfo));
-    }
-
-    // Create MPI type corresponding to CMInfo.
-    MPI_Datatype CMtype;
-    createCMType(&CMtype);
-
-    // Send request to all
-    CMInfo *recvCMArr = calloc(totalReceived, sizeof(CMInfo));
-    MPI_Alltoallv(sendCMArr, scounts, sdispls, CMtype,
-                  recvCMArr, rcounts, rdispls, CMtype, comm);
-
-    /**
-     * Handle request received : search mates in local reads array.
-     * */
-
-    for (int i = 0; i < num_proc; i++) {
-        for (int j = 0; j < rcounts[i]; j++) {
-            int index = rdispls[i] + j;
-
-            for (int k = 0; k < readNum; k++) {
-                if (readArr[k] && readArr[k]->fingerprint == recvCMArr[index].fingerprint) {
-                    recvCMArr[index].mateRank = rank;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Return request result
-    MPI_Alltoallv(recvCMArr, rcounts, rdispls, CMtype,
-                  sendCMArr, scounts, sdispls, CMtype, comm);
-
-    /**
-     *  Determine mate rank and check_with_bruck using the result received.
-     *  TODO:optimize, jump directly to sended CMInfo.
-     * */
-
-    for (int i = 0; i < num_proc; i++) {
-        for (int j = 0; j < scounts[i]; j++) {
-            int index = sdispls[i] + j;
-
-            if (sendCMArr[index].mateRank != -1) {
-
-                int found = 0;
-
-                for (int k = 0; k < readNum; k++) {
-                    readInfo *read = readArr[k];
-
-                    if (read && sendCMArr[index].fingerprint == read2mateFP(read)) {
-                        read->mate_rank = sendCMArr[index].mateRank;
-                        read->check_with_bruck = (read->mate_rank == rank ? 0 : 1);
-                        found = 1;
-                    }
-                }
-
-                if (found == 0) {
-                    md_log_rank_warning(rank, "Cannot found external mate with fingerprint %llu which is in overlapped interval position.\n", sendCMArr[index].fingerprint);
-                }
-            }
-
-        }
-    }
-
-
-    MPI_Type_free(&CMtype);
-    free(sendCMArr);
-    free(recvCMArr);
-    free(scounts);
-    free(rcounts);
-    free(sdispls);
-    free(rdispls);
-}
-
-/**
  * @date 2018 Apr 15
  * @brief Insert a read in fragments list or pairs list
  * @param[in, out] l list
@@ -1937,6 +1792,9 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
 
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %d mates, fragList size = %d\n", totalrecv, fragList->size);
 
+    //test if we have nothing to do we return
+    if (totalrecv == 0) return; 
+
     int mateCounter = 0;
     for (int i = 0; i < totalrecv; i++) {
         readInfo *mate = getReadFromFingerprint(htbl, matesByProc[i]->fingerprint);
@@ -1945,8 +1803,12 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
          * Note that the array matesByProc contains all externals mates among all process.
          * */
 
+	if (mate == NULL) continue;
+	//assert(mate != NULL);
+	
         if (mate) {
-            assert(mate->external);
+            //assert(mate->external);
+	    if (!mate->external) continue;
             /* free fictitious mate */
             freeRead(mate);
             /* insert external mate, it is partially filled as a readInfo */
@@ -1968,11 +1830,16 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
 
             for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
 
-                // compare clipped position first because read2mateFP is expensive
+		 
+                
+		// compare clipped position first because read2mateFP is expensive
                 if (node->read->coordPos == matesByProc[i]->coordMatePos) {
-                    unsigned long long fragMateFingerprint = read2mateFP(node->read);
+				
+                   unsigned long long fragMateFingerprint = read2mateFP(node->read);
+		    
+		   if (matesByProc[i]->fingerprint == fragMateFingerprint) {
 
-                    if (matesByProc[i]->fingerprint == fragMateFingerprint) {
+			 
                         readInfo *insertedRead = buildReadEnds(matesByProc[i], node->read, readEndsList);
                         insertReadInList(fragList, matesByProc[i], 1) ;
                         matesByProc[i]->Qname = strdup(node->read->Qname);
@@ -1996,7 +1863,7 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
         readInfo *mate = getMateFromRead(htbl, node->read);
 
         if (!mate) {
-            md_log_rank_error(rank, "Cannot found %s/2. Please check if it's in the file or not.\n", node->read->Qname, rank);
+            md_log_rank_error(rank, "Cannot found %s/2 of fingerprint %zu Please check if it's in the file or not.\n", node->read->Qname, node->read-> fingerprint, rank);
             exit(EXIT_FAILURE);
         }
 

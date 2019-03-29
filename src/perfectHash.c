@@ -112,8 +112,8 @@
  *   @param[in] b an integer
  */
 
-static unsigned long long mod(unsigned long long a, unsigned long long b) {
-    unsigned long long r = a % b;
+static size_t mod(size_t a, size_t b) {
+    size_t r = a % b;
     return r < 0 ? r + b : r;
 }
 
@@ -124,13 +124,13 @@ static unsigned long long mod(unsigned long long a, unsigned long long b) {
  *   @return 1 if n is prime, 0 otherwise
  */
 
-static int isPrime (int n) {
+static size_t isPrime (size_t n) {
     if (n < 2) { return 0; }
     if (n == 2) { return 1; }
     if (n % 2 == 0) { return 0; }
     if (n == 3) { return 1; }
     if (n % 3 == 0) { return 0; }
-    for (int i = 3; i <= sqrt(n); i += 2) if (n % i == 0) { return 0; }
+    for (size_t i = 3; i <= sqrt(n); i += 2) if (n % i == 0) { return 0; }
     return 1;
 }
 
@@ -141,8 +141,8 @@ static int isPrime (int n) {
  *   @return the next prime
  */
 
-static int getPrimeGT(int m) {
-    int p = m % 2 == 0 ? m + 1 : m + 2;
+static size_t getPrimeGT(size_t m) {
+    size_t p = m % 2 == 0 ? m + 1 : m + 2;
 
     while (!isPrime(p)) {
         p += 2;
@@ -167,8 +167,8 @@ unsigned long long string2MD5(char *str) {
     MD5_Init(&context);
     MD5_Update(&context, str, strlen(str));
     MD5_Final(digest, &context);
-    unsigned long long a = *(unsigned long long *)digest;
-    unsigned long long b = *(unsigned long long *)(digest + 8);
+    size_t a = *(size_t *)digest;
+    size_t b = *(size_t *)(digest + 8);
     // XOR them to get a shorter fingerprint 
     return a ^ b;
 }
@@ -186,14 +186,16 @@ unsigned long long string2MD5(char *str) {
 unsigned long long read2Fingerprint(readInfo *read) {
     // QNAME have at most 255 char
     char *buffer = calloc(300, sizeof(char));
-    strcpy(buffer, read->Qname);
+    assert(strcpy(buffer, read->Qname));
     int firstInPair = readBits(read->valueFlag, 6);
     int secondInPair = readBits(read->valueFlag, 7);
     assert(firstInPair || secondInPair);
-    char numInPair = digit2char(firstInPair + 2 * secondInPair);
+    char numInPair = digit2char(firstInPair + 2*secondInPair);
     // string to hash is <QNAME><numberInPair>
-    strcat(buffer, &numInPair);
-    unsigned long long fingerprint = string2MD5(buffer);
+    assert(numInPair);
+    assert(strcat(buffer, &numInPair));
+    size_t fingerprint = string2MD5(buffer);
+    assert(fingerprint);
     free(buffer);
     return fingerprint;
 }
@@ -210,7 +212,7 @@ unsigned long long read2Fingerprint(readInfo *read) {
  *         - Original paper : Carter, Larry; Wegman, Mark N. (1979). "Universal Classes of Hash Functions". Journal of Computer and System Sciences. 18 (2): 143–154.
  */
 
-int univHash(hashParam hp, int p, unsigned long long k) {
+int univHash(hashParam hp, int p, size_t k) {
     return mod(mod(hp.a * k + hp.b, p), hp.m);
 }
 
@@ -303,7 +305,7 @@ void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, int size) {
  *   @note This function is use to ensure that we are collision-free in second level hash table.
  */
 
-int haveCollision(hashParam hp, int prime, unsigned long long *arr, int size) {
+int haveCollision(hashParam hp, int prime, size_t *arr, int size) {
     char *count = calloc(hp.m, sizeof(char));
     int flag = 0;
 
@@ -338,7 +340,7 @@ void constructSecTable(hashTable *htbl, readInfo **arr, int size) {
 
     int *count = calloc(hp.m, sizeof(int));
     int *index = calloc(hp.m, sizeof(int));
-    unsigned long long **subarr = malloc(sizeof(unsigned long long *) * hp.m);
+    size_t **subarr = malloc(sizeof(size_t *) * hp.m);
     htbl->secTable = malloc(sizeof(secTable *) * hp.m);
 
     // allocate all second level hash tables
@@ -531,23 +533,20 @@ void printPerfectHashTable(hashTable *htbl) {
  *   @param if found, the associated read, NULL otherwise.
  */
 
-readInfo *getReadFromFingerprint(hashTable *htbl, unsigned long long fingerprint) {
+readInfo *getReadFromFingerprint(hashTable *htbl, size_t fingerprint) {
     // compute which slot read maps to in the main table
     int h1 = univHash(htbl->h, htbl->prime, fingerprint);
     hashParam sechp = htbl->secTable[h1]->h;
 
     // we don't found the read we search
-    if (sechp.m == 0) {
-        return NULL;
-    }
-
+    if (sechp.m == 0) return NULL;
     // compute index in the second level hash table 
     int h2 = univHash(sechp, htbl->prime, fingerprint);
     readInfo *read = htbl->secTable[h1]->table[h2];
 
     // we don't found the read we search
     if (!read || read->fingerprint != fingerprint) {
-        return NULL;
+	return NULL;
 
     } else {
         return read;
@@ -569,7 +568,7 @@ readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *Qname, int PairNum) 
     /* first in pair = 64, second in pair = 128 */
     int flag = PairNum * 64;
     readInfo read = {.Qname = Qname, .valueFlag = flag};
-    unsigned long long fingerprint = read2Fingerprint(&read);
+    size_t fingerprint = read2Fingerprint(&read);
     return getReadFromFingerprint(htbl, fingerprint);
 }
 
@@ -581,11 +580,11 @@ readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *Qname, int PairNum) 
  */
 
 unsigned long long read2mateFP(readInfo *read) {
-    int firstInPair  = readBits(read->valueFlag, 6);
-    int secondInPair = readBits(read->valueFlag, 7);
-    int matePairNum  = 2 * firstInPair + secondInPair;
+    unsigned int firstInPair  = readBits(read->valueFlag, 6);
+    unsigned int secondInPair = readBits(read->valueFlag, 7);
+    size_t matePairNum  = 2 * firstInPair + secondInPair;
     assert(matePairNum == 1 || matePairNum == 2);
-    int mateFlag = matePairNum * 64;
+    size_t mateFlag = matePairNum * 64;
     readInfo mate = {.Qname = read->Qname, .valueFlag = mateFlag};
     return read2Fingerprint(&mate);
 }
