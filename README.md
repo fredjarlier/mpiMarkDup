@@ -13,6 +13,11 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 28/03/2019 <br />
+
+1) fix some integer conversion and prototype. <br />
+2) fix a corner case when a rank recieve no mate from other rank. <br />
+
 Release 1.0 from the 22/03/2019 <br />
 
 1) fix the coordinates overlapped between 2 ranks in case we are not power of 2 dimension (again it's better if you are in power of 2 dimension) <br />
@@ -31,8 +36,8 @@ requirements
 tested with 
 
 gcc > 4.8 (tested with 7.3) <br />
-openmpi 2.2.1, 4.0 <br />
-openssl 1.1.0g <br />
+openmpi (tested with 2.2.1, 3, 4.0) <br />
+openssl (tested with :1.0.2k, 1.1.0g) <br />
 automake-1.15 <br />
 autoconf-2.69 <br />
 
