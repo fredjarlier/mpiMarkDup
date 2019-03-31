@@ -1028,7 +1028,7 @@ int main (int argc, char *argv[]) {
             md_log_rank_debug(chosen_split_rank, "[MPISORT] Split size             = %d \n", split_size);
 
             //we test the computed dimension
-            if (dimensions == split_size) {
+            if ( dimensions == split_size ) {
 
                 size_t max_num_read = 0;
                 MPI_Allreduce(&localReadNumberByChr[i], &max_num_read, 1, MPI_LONG_LONG_INT, MPI_MAX, split_comm);//We take the max read number out of all the ranks, so we can allocate the right amount later
@@ -1224,13 +1224,13 @@ int main (int argc, char *argv[]) {
                 //Le rang 0 récupère les last_local_offset de chaque processus et le mets dans un tableau y
                 MPI_Gather(&last_local_offset, 1, MPI_LONG_LONG_INT, y, 1, MPI_LONG_LONG_INT, 0, split_comm);
 
-                if (rank == 0) {
+                if (split_rank == 0) {
                     for (k1 = 1; k1 < (split_size + 1); k1++) {
                         y2[k1] = y[k1 - 1];
                     }
                 }
 
-                if (rank == 0) {
+                if (split_rank == 0) {
                     for (k1 = 1; k1 < (split_size + 1); k1++) {
                         y2[k1] = y2[k1 - 1] + y2[k1];
                     }
@@ -1290,10 +1290,12 @@ int main (int argc, char *argv[]) {
 
 
                 pos_ref0 = max_num_read * split_rank - N0;
+                //fprintf(stderr, "[MPISORT] chosen_split_rank = %d \n", chosen_split_rank);
+                //fprintf(stderr, "[MPISORT] chosen_rank = %d \n", chosen_rank);
 
                 for (j = 0; j < max_num_read; j++) {
                     if ( local_reads_sizes_sorted[j] != 0) {
-                        int new_rank = 0;
+                        int new_rank = chosen_split_rank;
                         pos_ref0 = (max_num_read * split_rank + j) - N0;
 
                         if (pos_ref0 >= 0) {
@@ -1307,7 +1309,7 @@ int main (int argc, char *argv[]) {
                                     break;
                                 }
                             }
-
+                            int previous_rank = local_dest_rank_sorted[j];
                             local_dest_rank_sorted[j] = new_rank;
                         }
                     }
@@ -1337,13 +1339,14 @@ int main (int argc, char *argv[]) {
 
                 //Cwe care for overlapped coordinates between rank
 
-                if(rank != (num_proc - 1)){
-                        MPI_Send(&local_reads_coordinates_sorted[max_num_read - 1], 1, MPI_LONG_LONG_INT, rank+1,  0, MPI_COMM_WORLD);
-                        MPI_Send(&local_dest_rank_sorted[max_num_read - 1], 1, MPI_INT, rank+1,  1, MPI_COMM_WORLD);
+                if(split_rank != (split_size - 1)){
+
+                        MPI_Send(&local_reads_coordinates_sorted[max_num_read - 1], 1, MPI_LONG_LONG_INT, split_rank+1,  0, split_comm);
+                        MPI_Send(&local_dest_rank_sorted[max_num_read - 1], 1, MPI_INT, split_rank+1,  1, split_comm);
                 }
-                if(rank!=0){
-                        MPI_Recv(&previous_rank_last_coord, 1, MPI_LONG_LONG_INT, rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        MPI_Recv(&previous_rank_last_dest, 1, MPI_INT, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if(split_rank!=0){
+                        MPI_Recv(&previous_rank_last_coord, 1, MPI_LONG_LONG_INT, split_rank-1, 0, split_comm, MPI_STATUS_IGNORE);
+                        MPI_Recv(&previous_rank_last_dest, 1, MPI_INT, split_rank-1, 1, split_comm, MPI_STATUS_IGNORE);
                 }
 
                 int j=0;
@@ -1396,6 +1399,7 @@ int main (int argc, char *argv[]) {
                     previous_coordinates = current_coordinates;				
                 }
             
+
                 md_log_rank_debug(chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 2] time spent = %f s\n", split_rank, MPI_Wtime() - time_count);
                 
                 if (new_dest_rank) fprintf(stderr, "rank %d :::::[MPISORT][BITONIC 2] number of new dest rank = %zu s\n", split_rank, new_dest_rank) ;
@@ -1424,6 +1428,7 @@ int main (int argc, char *argv[]) {
                 size_t new_total_reads = 0;                  
 
                 md_log_rank_debug( chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 3] time spent = %f s\n", split_rank, MPI_Wtime() - time_count );
+                
                 // now we make a reduce operation on num_reads_per_dest_rank
                 MPI_Allreduce( num_reads_per_dest_rank, new_num_reads_per_job, dimensions, MPI_LONG_LONG_INT, MPI_SUM, split_comm );
                         
@@ -1621,7 +1626,7 @@ int main (int argc, char *argv[]) {
                 COMM_WORLD = split_comm;
                 time_count = MPI_Wtime();
 
-                bruckWrite3(rank,
+                bruckWrite3(split_rank,
                             dimensions,
                             count6,
                             number_of_reads_by_procs,
@@ -1745,16 +1750,13 @@ int main (int argc, char *argv[]) {
 
                 free(local_reads_coordinates_sorted_trimmed);
 
-                //if (split_rank == chosen_split_rank) {
-                //    fprintf(stderr,   "rank %d :::::[MPISORT] we call write SAM \n", split_rank);
-                //}
                 md_log_rank_debug(chosen_split_rank, "[MPISORT] we call write SAM\n");
 
                 malloc_trim(0);
 
                 time_count = MPI_Wtime();
 
-
+                
                 writeSam(
                     split_rank,
                     output_dir,

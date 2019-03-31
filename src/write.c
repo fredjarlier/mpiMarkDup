@@ -1274,7 +1274,8 @@ void writeSam(
 		while (count001 < 1500){fprintf(stderr, "%c", *p102 ); p102++; count001++;}
 	} 
     */
-
+    //fprintf(stderr, "rank %d :::::[MPISORT]  char_buff_uncompressed = %s  \n", rank, char_buff_uncompressed);
+    
     char *char_buff_uncompressed_with_duplicates = NULL;
     char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, previous_local_readNum, header, split_comm);
 

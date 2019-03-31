@@ -13,6 +13,12 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+
+Release 1.0 from the 31/03/2019 <br />
+
+1) fix corner case when reads distribution is unbalanced. <br />
+
+
 Release 1.0 from the 28/03/2019 <br />
 
 1) fix some integer conversion and prototype. <br />

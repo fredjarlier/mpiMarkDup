@@ -406,7 +406,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 getTokenTab(&q, sam_buff, &tokenCar);
                 read->valueFlag  = atoll(tokenCar);
 
-		unsigned int readUnmapped = readBits((unsigned int)read->valueFlag, 2);
+		        unsigned int readUnmapped = readBits((unsigned int)read->valueFlag, 2);
                 unsigned int mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
                 unsigned int readReverseStrand = readBits((unsigned int)read->valueFlag, 4);
                 unsigned int secondaryAlignment = readBits((unsigned int)read->valueFlag, 8);
@@ -513,7 +513,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
 
                 // we tell if the mate is in the buffer
                 // we check if the mate's coordinates are outer the buffer limits
-
+                         
                 checkMateBuffer(read, intervalByProc, comm);
                 free(tokenCar);
 
@@ -596,7 +596,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
 
         free(tokenCar);
     }
-
+    
     return read;
 }
 
@@ -1420,6 +1420,7 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
         // parse read
         getLine(&q, bufferReads, &tok);
         read = readParsing(tok, intervalByProc, readCounter, chr, lb, comm);
+                 
 
         if (read) {
             chr->lastChr = read->readChromosome;
