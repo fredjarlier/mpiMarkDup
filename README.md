@@ -14,6 +14,10 @@ Release notes
 -------------
 
 
+Release 1.0 from the 08/04/2019 <br />
+
+1) fix reproducibility issue.  <br />
+
 Release 1.0 from the 31/03/2019 <br />
 
 1) fix corner case when reads distribution is unbalanced. <br />
