@@ -1,10 +1,10 @@
 # mpiMarkDup
 
-MPI and C based program of marking duplicates for Next Generation Sequencing technology.  
+MPI and C based program of marking duplicates for Next Generation Sequencing technology.<br /> 
 
-The code is a fork from the mpiSORT project. We add a process to manage the marking of duplicates read.
+The code is a fork from the mpiSORT project. We add a process to manage the marking of duplicate reads.
 
-The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on low level  technologies and parallel algorithms.   
+The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on low level  technologies and parallel algorithms.<br />
 
 The project is still under development so feel free to test it and report.
 
