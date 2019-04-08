@@ -404,14 +404,24 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
 
             case 1: // Flag part
                 getTokenTab(&q, sam_buff, &tokenCar);
-                read->valueFlag  = atoll(tokenCar);
-
+                read->valueFlag  = atoi(tokenCar);
+                
+                assert(read->valueFlag);    
 		        unsigned int readUnmapped = readBits((unsigned int)read->valueFlag, 2);
                 unsigned int mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
                 unsigned int readReverseStrand = readBits((unsigned int)read->valueFlag, 4);
                 unsigned int secondaryAlignment = readBits((unsigned int)read->valueFlag, 8);
                 unsigned int supplementaryAlignment = readBits((unsigned int)read->valueFlag, 11);
 
+
+                unsigned int firstInPair = readBits((unsigned int)read->valueFlag, 6);
+                //fprintf (stderr, "[IN readParsing] ::: read->Qname = %s ::: firstInPair = %u \n", read->Qname, firstInPair);
+                //fprintf (stderr, "[IN readParsing] ::: read->Qname = %s ::: flag = %u \n", read->Qname, read->valueFlag );
+                if (firstInPair == 1)
+                    read->pair_num = 1;
+                else
+                    read->pair_num = 2;
+                
 		/*
 		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: tokenCar = %s \n", read->Qname, tokenCar);
 		fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: read->valueFlag = %zu \n", read->Qname, read->valueFlag);
@@ -473,7 +483,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
             case 5: // the CIGAR string
                 getTokenTab(&q, sam_buff, &tokenCar);
                 read->cigar = tokenCar;
-
+                assert(read->cigar);
 
                 if ( strcmp(read->cigar, "*") == 0 ) {
                     //shall not be marked as duplicate but it's mate yes
@@ -569,8 +579,11 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
     if (opticalDistance > 0) {
         read->physicalLocation = computePhysicalLocation(read);
     }
+    assert(read->valueFlag);    
+    assert (( read->pair_num == 1) || ( read->pair_num == 2 ));
 
     read->fingerprint = read2Fingerprint(read);
+    assert(read->fingerprint);
 
     //Now we search in the flag for LB name
     while (getTokenTab(&q, sam_buff, &tokenCar)) {
@@ -642,6 +655,7 @@ int areComparableForDuplicates(readInfo *pair1, readInfo *pair2, const int isPai
 
     if (areComparable == 1) {
         areComparable = pair1->readChromosome == pair2->readChromosome && pair1->unclippedCoordPos == pair2->unclippedCoordPos;
+
     }
 
     if (areComparable == 1) {
@@ -734,6 +748,8 @@ void trackOpticalDuplicates(llist_t *cluster, readInfo *best) {
 
 void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, int *totalOpticalDuplicate) {
 
+
+
     size_t bestScore = 0;
     readInfo *best = NULL;
 
@@ -755,13 +771,28 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
 
     for (lnode_t *node = cluster->head ; node != cluster->nil; node = node->next) {
         if (node->read != best) {
+
             node->read->d = 1;
+            /*
+            if ( strcmp(node->read->Qname, "HISEQ5:D1MMMACXX:5:1101:10179:27080") == 0){
+                fprintf (stderr, "found HISEQ5:D1MMMACXX:5:1101:10179:27080 with flag = %u \n", node->read->valueFlag);
+                fprintf(stdout, "read %s is a duplicate \n", node->read->Qname);
+            }
+            */
             node->read->checked = 1;
 
             readInfo *mate = getMateFromRead(htbl, node->read);
 
+            if (node->read->pair_num == 1) assert(mate->pair_num == 2);
+            if (node->read->pair_num == 2) assert(mate->pair_num == 1);
+
             if (node->read->indexAfterSort != mate->indexAfterSort) {
                 int mateIsDuplica = markMateDuplicateFlag(htbl, node->read, 1);
+                /*  
+                //fprintf(stderr, "line 784 mateIsDuplica = %d \n", mateIsDuplica);
+                if ( (mateIsDuplica) && strcmp( node->read->Qname, "HISEQ5:D1MMMACXX:5:1101:10179:27080") == 0) 
+                    fprintf(stdout, "mate %s is a duplicate \n", node->read->Qname);
+                */
                 (*totalDuplica) += 1 + mateIsDuplica;
             }
 
@@ -772,6 +803,8 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
         }
     }
 
+    //fprintf(stderr, "line 794 in markDuplicatePairs totalDuplicates = %d \n", *totalDuplica);
+    
     best->d = 0;
     best->checked = 1;
     markMateDuplicateFlag(htbl, best, 0);
@@ -830,6 +863,7 @@ void markDuplicateFragments(llist_t *cluster, hashTable *htbl, int *totalDuplica
         best->checked = 1;
     }
 
+    //fprintf(stderr, "in markDuplicateFragments totalDuplicates = %d \n", *totalDuplica);
 }
 
 /**
@@ -883,15 +917,19 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
     //llist_readInfo_print(readEndsList);
     lnode_t *firstOfNextCluster = NULL;
 
+    //fprintf(stderr, "rank %d Enter findDuplica \n", rank);
+
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
 
         if (firstOfNextCluster && areComparableForDuplicates(firstOfNextCluster->read, node->read, 1)) {
+            //fprintf(stderr, "Call llist_append \n");
             llist_append(nextCluster, node->read);
 
         } else {
 
-            if (nextCluster->size > 1) {
+            if (nextCluster->size > 1) {                
                 markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
+                //fprintf(stderr, "rank %d after findDuplica 1 totalDuplica = %d \n", rank, *totalDuplica);
             }
 
             //llist_readInfo_print(nextCluster);
@@ -903,9 +941,12 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
         }
 
     }
+     //fprintf(stderr, "rank %d in findDuplica we go to nextCluster \n", rank);
 
     if (nextCluster->size > 1) {
+        
         markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
+         //fprintf(stderr, "rank %d after findDuplica 2 totalDuplica = %d \n", rank, *totalDuplica);  
     }
 
     //llist_readInfo_print(nextCluster);
@@ -927,6 +968,8 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
 
             if (nextCluster->size > 1 && containsFrags) {
                 markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
+                //fprintf(stderr, "rank %d after markDuplicateFragments 1 totalDuplica = %d \n", rank, *totalDuplica);
+                //fprintf(stderr, "call markDuplicateFragments \n");
                 //llist_readInfo_print(nextCluster);
             }
 
@@ -935,6 +978,10 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
             llist_append(nextCluster, node->read);
             firstOfNextCluster = node;
             unsigned int readIsPaired = isPaired(node->read);
+            
+            //if (!readIsPaired)
+            //    fprintf(stderr, " in find duplicate this read %s has no pair flag = %u \n ", node->read->Qname, node->read->valueFlag);
+
             containsPairs = readIsPaired ;
             containsFrags = !readIsPaired;
 
@@ -943,9 +990,9 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
     }
 
     //llist_readInfo_print(nextCluster);
-
-    //printf("containsFrags : %d, containsPairs : %d  ",  containsFrags, containsPairs);
+    //printf("containsFrags : %d, containsPairs : %d \n ",  containsFrags, containsPairs);
     markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
+    //fprintf(stderr, "rank %d after markDuplicateFragments 2 totalDuplica = %d \n", rank, *totalDuplica);
     //llist_readInfo_print(nextCluster);
     llist_clear(nextCluster);
     llist_destruct(nextCluster);
@@ -980,6 +1027,8 @@ size_t getMateRankReadSizeBeforeBruck(llist_t *list, mateInfo **mates) {
             (*mates)[k].coordPos = read->coordPos;
             (*mates)[k].coordMatePos = read->coordMatePos;
             (*mates)[k].orientation = read->orientation;
+            (*mates)[k].valueFlag = read->valueFlag;
+            (*mates)[k].pair_num = read->pair_num;
             k++;
         }
 
@@ -1063,7 +1112,10 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
 
     /* Trace reads to send */
     for (int i = 0; i < numberOfReadsToSend; i++) {
-        md_log_rank_trace(rank, "send :: lb=%zu, mateRank=%zu, score=%zu, index=%zu, unclippedPos=%zu, Pos=%zu, matePos=%zu, orientation=%zu, fingerprint=%zu\n",
+
+        //assert (mates[i].pair_num == 1 || mates[i].pair_num == 2);
+
+        md_log_rank_trace(rank, "send :: lb=%zu, mateRank=%zu, score=%zu, index=%zu, unclippedPos=%zu, Pos=%zu, matePos=%zu, orientation=%zu, fingerprint=%zu, valueFlag = %u, pair_num = %u \n",
         mates[i].readLb,
         mates[i].mateRank,
         mates[i].phredScore,
@@ -1072,7 +1124,9 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
         mates[i].coordPos,
         mates[i].coordMatePos,
         mates[i].orientation,
-        mates[i].fingerprint);
+        mates[i].fingerprint,
+        mates[i].valueFlag,
+        mates[i].pair_num);
     }
 
     /* End of trace */
@@ -1093,9 +1147,10 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
     for (int i = 0; i < num_proc; i++) {
         for (int j = 0; j < rcounts[i] ; j++) {
             int index = rdispls[i] + j;
+            assert (matesRecv[index].pair_num == 1 || matesRecv[index].pair_num == 2);
 
-        md_log_rank_trace(rank, "received :: from rank =%d, lb=%zu, mateRank=%zu, score=%zu, index=%zu, unclippedPos=%zu, Pos=%zu, matePos=%zu, orientation=%zu, fingerprint=%zu\n",
-        i,
+
+        md_log_rank_trace(rank, "received :: from rank =%d, lb=%zu, mateRank=%zu, score=%zu, index=%zu, unclippedPos=%zu, Pos=%zu, matePos=%zu, orientation=%zu, fingerprint=%zu, valueFlag = %u \n", i,
         matesRecv[index].readLb,
         matesRecv[index].mateRank,
         matesRecv[index].phredScore,
@@ -1104,8 +1159,8 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
         matesRecv[index].coordPos,
         matesRecv[index].coordMatePos,
         matesRecv[index].orientation,
-        matesRecv[index].fingerprint
-        );
+        matesRecv[index].fingerprint,
+        matesRecv[index].valueFlag );
         }
     }
 
@@ -1139,7 +1194,8 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
             mate->coordPos = matesRecv[index].coordPos;
             mate->coordMatePos = matesRecv[index].coordMatePos;
             mate->orientation = matesRecv[index].orientation;
-
+            mate->valueFlag = matesRecv[index].valueFlag;
+            mate->pair_num  = matesRecv[index].pair_num;
             // These mates are external and not checked.
             mate->external = 1;
             mate->checked = 0;
@@ -1313,8 +1369,15 @@ void insertReadInList(llist_t *l, readInfo *read, const int isFragmentList) {
  * @return read which is representing the pair
  */
 
-readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList) {
+readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList, int case_insert) {
     //md_log_trace("read1=%s, read2=%s, read1->unclippedCoordPos=%zu, read1->coordMatePos=%zu, read2->unclippedCoordPos=%zu, read2->coordMatePos=%zu, read1->orientation=%d, read2->orientation=%d\n", read1->Qname, read2->Qname, read1->unclippedCoordPos, read1->coordMatePos, read2->unclippedCoordPos, read2->coordMatePos, read1->orientation, read2->orientation);
+
+    assert(read1->pair_num == 1 || read1->pair_num == 2); 
+    assert(read2->pair_num == 1 || read2->pair_num == 2);
+
+    if (read1->pair_num == 1) assert(read2->pair_num == 2);
+    if (read1->pair_num == 2) assert(read2->pair_num == 1);
+  
 
     //get unclipped mate coord
     read1->coordMatePos = read2->unclippedCoordPos;
@@ -1331,12 +1394,15 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList)
 
     }
 
-    if (read2->readChromosome > read1->readChromosome || (read2->readChromosome == read1->readChromosome && read2->unclippedCoordPos >= read1->unclippedCoordPos)) {
+    //if (read2->readChromosome > read1->readChromosome || 
+    //    (read2->readChromosome == read1->readChromosome && read2->unclippedCoordPos >= read1->unclippedCoordPos)) {
+    if (case_insert == 0){    
         insertReadInList(readEndsList, read1, 0);
-        return read1;
+        return read2;
         //md_log_trace(" normal case :: read2=%s, read1=%s, read2->orientation=%d, read1->orientation=%d\n", read2->Qname, read1->Qname, read2->orientation, read1->orientation);
 
     } else {
+
         insertReadInList(readEndsList, read2, 0);
         orientation first = getOrientation(read2, 0);
         orientation second = getOrientation(read1, 0);
@@ -1363,7 +1429,7 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList)
         }
 
         //md_log_trace(" reverse case :: read2=%s, read1=%s, read2->orientation=%d, read1->orientation=%d\n", read2->Qname, read1->Qname, read2->orientation, read1->orientation);
-        return read2;
+        return read1;
     }
 }
 
@@ -1413,6 +1479,8 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
     khint_t k;
     int ret;
 
+    size_t readEndscall = 0;
+
     while (*q) {
         progression = 100 * ((float)readCounter / readNum);
         char *tok;
@@ -1420,7 +1488,7 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
         // parse read
         getLine(&q, bufferReads, &tok);
         read = readParsing(tok, intervalByProc, readCounter, chr, lb, comm);
-                 
+        
 
         if (read) {
             chr->lastChr = read->readChromosome;
@@ -1430,9 +1498,16 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
         unsigned int firstInPair, readPaired, mateUnmapped;
 
         if (read)  {
+            assert(read->valueFlag);
+            
             readPaired = readBits((unsigned int)read->valueFlag, 0);
             mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
             firstInPair = readBits((unsigned int)read->valueFlag, 6);
+
+            if (firstInPair)
+                read->pair_num = 1;
+            else
+                read->pair_num = 2;
 
             insertReadInList(fragList, read, 1);
 
@@ -1466,7 +1541,8 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
                     readInfo *end = kh_val(hash, k);
 
                     /* Construct paired-end */
-                    buildReadEnds(end, read, readEndsList);
+                    buildReadEnds(end, read, readEndsList, 0);
+                    readEndscall++;
                 }
             }
         }
@@ -1493,6 +1569,7 @@ int parseLibraries(char *bufferReads, Interval *intervalByProc, llist_t *fragLis
     }
 
     kh_destroy(read, hash);
+    //fprintf (stderr, "readEndscall = %zu \n", readEndscall);
 
     //md_log_debug("Ensure reads mate rank which are susceptible in multiple processes ...\n");
     //ensureMateRank(*readArr, intervalByProc, readNum, comm);
@@ -1555,7 +1632,7 @@ Interval *gatherIntervalByProc(Interval interval, MPI_Comm comm) {
 
 char *flag2string(int flagValue) {
     char *valueString = calloc(5, sizeof(char));
-    sprintf(valueString, "%d", flagValue);
+    sprintf(valueString, "%u", flagValue);
     return valueString;
 }
 
@@ -1725,16 +1802,20 @@ int countExternalMateInArray(readInfo **readArr, size_t readNum, unsigned int ch
 int fillReadAndFictitiousMate(readInfo **readArr, readInfo ***readArrWithExternal, size_t readNum) {
 
     size_t externalNum = countExternalMateInArray(readArr, readNum, 1);
+
+    //fprintf(stderr, " in fillReadAndFictitiousMate : externalMate = %zu \n", externalNum);
+    
     size_t totalRead = readNum + externalNum;
     *readArrWithExternal = malloc(totalRead * sizeof(readInfo *));
     int current = 0;
 
     for (int i = 0; i < readNum; i++) {
         if (readArr[i] && readArr[i]->check_with_bruck == 1) {
+
             (*readArrWithExternal)[current++] = readArr[i];
             readInfo *mate = calloc(1, sizeof(readInfo));
             /* clone read */
-            mate = cloneRead(readArr[i]);
+            mate = cloneRead(readArr[i]);            
 
             //md_log_rank_trace(rank, "fictitious mate Qname = %s\n", mate->Qname);
             mate->external = 1;
@@ -1742,8 +1823,15 @@ int fillReadAndFictitiousMate(readInfo **readArr, readInfo ***readArrWithExterna
             mate->fingerprint = read2mateFP(readArr[i]);
             (*readArrWithExternal)[current++] = mate;
 
+            if (readArr[i]->pair_num == 1 ) mate->pair_num = 2;
+            if (readArr[i]->pair_num == 2 ) mate->pair_num = 1;    
+
+            assert(mate->valueFlag);
+
         } else {
             (*readArrWithExternal)[current++] = readArr[i];
+            //assert(readArr[i]->valueFlag);
+            //assert((*readArrWithExternal)[current++]->valueFlag);
         }
     }
 
@@ -1796,10 +1884,26 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
     //test if we have nothing to do we return
     if (totalrecv == 0) return; 
 
+
+    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
+                readInfo *read = node->read;
+                //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+                assert( (read->pair_num == 1) || (read->pair_num == 2));
+            }
+
+            /* TRACE readEndsList */
+            for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
+                readInfo *read = node->read;
+                //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+                assert( (read->pair_num == 1) || (read->pair_num == 2));
+            }    
+
+
+
     int mateCounter = 0;
     for (int i = 0; i < totalrecv; i++) {
         readInfo *mate = getReadFromFingerprint(htbl, matesByProc[i]->fingerprint);
-
+        assert( (mate->pair_num == 1) || (mate->pair_num == 2));
         /* Only external mate of the current buffer has a slot in hash table.
          * Note that the array matesByProc contains all externals mates among all process.
          * */
@@ -1828,23 +1932,50 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
              *  - In the example above, rank 28 need to do 2923 * fragList->size comparisons in worst case.
              *   
              * */
-
+            
             for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
-
-		 
-                
-		// compare clipped position first because read2mateFP is expensive
+               
+        		// compare clipped position first because read2mateFP is expensive
                 if (node->read->coordPos == matesByProc[i]->coordMatePos) {
 				
+
+                   assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
+                   
                    unsigned long long fragMateFingerprint = read2mateFP(node->read);
 		    
-		   if (matesByProc[i]->fingerprint == fragMateFingerprint) {
+		              if (matesByProc[i]->fingerprint == fragMateFingerprint) {
 
-			 
-                        readInfo *insertedRead = buildReadEnds(matesByProc[i], node->read, readEndsList);
+                        /*if (matesByProc[i]->valueFlag == 0)
+                            fprintf(stderr, "on %d problem with %d read %s valueFlag is NULL \n", totalrecv, i, node->read->Qname);
+			                   
+                        
+
+                        if (node->read->pair_num == 1){
+                            matesByProc[i]->pair_num = 2;
+                        }
+                        if (node->read->pair_num == 2){
+                            matesByProc[i]->pair_num == 1;
+                        }*/
+                        /*
+                        fprintf(stderr, "Call buildsreadEnds read %s valueFlag is = %u pair = %u \n", node->read->Qname, node->read->valueFlag
+                            , node->read->pair_num);
+
+
+                        fprintf(stderr, "Call buildsreadEnds matesByProc[%d] %s valueFlag is = %u pair = %u \n", i, matesByProc[i]->Qname, matesByProc[i]->valueFlag
+                            , matesByProc[i]->pair_num);
+                        */
+
+                        readInfo *insertedRead = buildReadEnds(matesByProc[i], node->read, readEndsList, 1);
                         insertReadInList(fragList, matesByProc[i], 1) ;
                         matesByProc[i]->Qname = strdup(node->read->Qname);
-                        matesByProc[i]->valueFlag = readFlag2MateFlag(node->read->valueFlag);
+
+                        assert ((node->read->pair_num == 1 ) || (node->read->pair_num ==2));
+                        
+                        if (node->read->pair_num == 1) assert (matesByProc[i]->pair_num == 2); 
+                        if (node->read->pair_num == 2) assert (matesByProc[i]->pair_num == 1);
+                        assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
+
+                        //matesByProc[i]->valueFlag = readFlag2MateFlag(node->read->valueFlag);
                         mateCounter++;
                         break;
 
@@ -1859,6 +1990,20 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
 
     md_log_rank_trace(rank, "Found %d/%d mates\n", mateCounter, totalrecv);
 
+    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
+                readInfo *read = node->read;
+                //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+                assert( (read->pair_num == 1) || (read->pair_num == 2));
+            }
+
+            /* TRACE readEndsList */
+    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
+           readInfo *read = node->read;
+           //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+           assert( (read->pair_num == 1) || (read->pair_num == 2));
+   }    
+
+
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
         assert(node->read);
         readInfo *mate = getMateFromRead(htbl, node->read);
@@ -1870,6 +2015,10 @@ void exchangeExternFrag(llist_t *fragList, llist_t *readEndsList, hashTable *htb
 
         node->read->pairPhredScore += mate->phred_score;
         node->read->mateIndexAfterSort = mate->indexAfterSort;
+        assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
+        assert( (mate->pair_num == 1) || (mate->pair_num == 2));
+        if (node->read->pair_num == 1) assert (mate->pair_num == 2); 
+        if (node->read->pair_num == 2) assert (mate->pair_num == 1);
     }
 
     /* free external mates in current library, others reads are free in destroyLBList */
@@ -1924,7 +2073,17 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
     timeStamp = MPI_Wtime();
     readInfo **readArr;
     char **samTokenLines;
-    parseLibraries(bufferReads, intervalByProc, fragList, readEndsList, &readArr, &samTokenLines, readNum, readIndexOffset, &chr,  &lb, comm);
+    parseLibraries(bufferReads, 
+                    intervalByProc, 
+                    fragList, 
+                    readEndsList, 
+                    &readArr, 
+                    &samTokenLines, 
+                    readNum, 
+                    readIndexOffset, 
+                    &chr,  
+                    &lb, 
+                    comm);
 
     md_log_debug("End of parsing and clustering %f seconds\n", MPI_Wtime() - timeStamp);
 
@@ -1932,9 +2091,13 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
     timeStamp = MPI_Wtime();
     hashTable *htbl = malloc(sizeof(hashTable));
     readInfo **readArrWithExternal;
+
     size_t totalReadWithFictitiousMate = fillReadAndFictitiousMate(readArr, &readArrWithExternal, readNum);
+    //fprintf(stderr, " totalReadWithFictitiousMate = %zu \n", totalReadWithFictitiousMate);
+   
     shareHpAndConstructHtbl(htbl, readArrWithExternal, totalReadWithFictitiousMate, comm);
     free(readArrWithExternal);
+    
     md_log_debug("Perfect hash table is constructed %f seconds\n", MPI_Wtime() - timeStamp);
 
 
@@ -1950,23 +2113,35 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
 
 
     /* TRACE fragList */
-    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
-        readInfo *read = node->read;
-        md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
-    }
-
-    /* TRACE readEndsList */
-    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
-        readInfo *read = node->read;
-        md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
-    }
-
+    
     /* End TRACE */
 
     md_log_debug("Start to exchange mates ...\n");
     timeStamp = MPI_Wtime();
     exchangeExternFrag(fragList, readEndsList, htbl, interval, comm) ;
     md_log_debug("Finished to exchange mate in %f seconds\n", MPI_Wtime() - timeStamp);
+
+    size_t fragList_size = 0;
+    size_t readEnds_size = fragList_size = 0;
+    
+    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
+        readInfo *read = node->read;
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        fragList_size++;
+    }
+
+    
+    /* TRACE readEndsList */
+    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
+        readInfo *read = node->read;
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        
+
+        readEnds_size++;
+    }
+
+   //fprintf(stderr, " TRACE 3 readEndsList size = %zu :::: fragList size =%zu \n", readEnds_size, fragList_size);
+
 
     md_log_debug("Start to sort fragments list and read ends list ...\n");
     timeStamp = MPI_Wtime();
@@ -1980,15 +2155,54 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
     llist_merge_sort(fragList, 1);
     llist_merge_sort(readEndsList, 0);
 
+
+    readEnds_size = fragList_size = 0;
+    
+    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
+        readInfo *read = node->read;
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        fragList_size++;
+    }
+
+    
+    /* TRACE readEndsList */
+    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
+        readInfo *read = node->read;
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        readEnds_size++;
+    }
+
+   //fprintf(stderr, " TRACE 4 readEndsList size = %zu :::: fragList size =%zu \n", readEnds_size, fragList_size);
+
+
+
+    readEnds_size = 0;
+    /* TRACE readEndsList */
+    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
+        readInfo *read = node->read;
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        readEnds_size++;
+    }
+
+   //fprintf(stderr, " TRACE 4 readEndsList size = = %zu \n", readEnds_size);
+
+
+
     md_log_debug("Finished to sort list in %f seconds\n", MPI_Wtime() - timeStamp);
 
     md_log_info("Start to find duplicate ...\n");
     timeStamp = MPI_Wtime();
     int localDuplicates = 0, localOpticalDuplicates = 0, totalDuplicates = 0, totalOpticalDuplicates = 0;
+    
     findDuplica(fragList, readEndsList, htbl, &localDuplicates, &localOpticalDuplicates, comm) ;
+    
+
+
     md_log_info("Finished to find duplicates in %f seconds\n", totalDuplicates, totalOpticalDuplicates,  MPI_Wtime() - timeStamp);
     md_log_info("Gather duplicates results ...\n");
+    
     timeStamp = MPI_Wtime();
+    
     MPI_Barrier(comm);
     MPI_Reduce(&localDuplicates, &totalDuplicates, 1, MPI_INT, MPI_SUM, 0, comm);
     MPI_Reduce(&localOpticalDuplicates, &totalOpticalDuplicates, 1, MPI_INT, MPI_SUM, 0, comm);

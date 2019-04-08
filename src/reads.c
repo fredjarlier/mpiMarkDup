@@ -96,14 +96,21 @@ void createCMType(MPI_Datatype *CMtype) {
  */
 
 void createMateType(MPI_Datatype *mate_type) {
-    int blocks[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
-    MPI_Datatype types[9] = {MPI_UNSIGNED_LONG_LONG, MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T};
-    MPI_Aint displacements[9] = {0};
-    MPI_Aint sizeEx, unintex, ulltex, lb;
+    
+    int blocks[11] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    MPI_Datatype types[11] = {MPI_UNSIGNED_LONG_LONG, MPI_SIZE_T, 
+        MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, 
+            MPI_SIZE_T, MPI_SIZE_T, MPI_SIZE_T, 
+                MPI_SIZE_T, MPI_UNSIGNED, MPI_UNSIGNED };
+
+    MPI_Aint displacements[11] = {0};
+    MPI_Aint sizeEx, unintex, ulltex, lb, unInt;
 
     MPI_Type_get_extent(MPI_SIZE_T, &lb, &sizeEx);
     //MPI_Type_get_extent(MPI_UNSIGNED, &lb, &unintex);
     MPI_Type_get_extent(MPI_UNSIGNED_LONG_LONG, &lb, &ulltex);
+    MPI_Type_get_extent(MPI_UNSIGNED, &lb, &unInt);
 
     displacements[0] = 0;
     displacements[1] = displacements[0] + ulltex;
@@ -114,8 +121,10 @@ void createMateType(MPI_Datatype *mate_type) {
     displacements[6] = displacements[5] + sizeEx;
     displacements[7] = displacements[6] + sizeEx;
     displacements[8] = displacements[7] + sizeEx;
+    displacements[9] = displacements[8] + unInt;   // for valueFlag
+    displacements[10] = displacements[9] + unInt;  // for pairnum   
 
-    MPI_Type_create_struct(9, blocks, displacements, types, mate_type);
+    MPI_Type_create_struct(11, blocks, displacements, types, mate_type);
     MPI_Type_commit(mate_type);
 }
 
@@ -152,6 +161,8 @@ readInfo *cloneRead(readInfo *read) {
     clonedRead->mateIndexAfterSort = read->mateIndexAfterSort;
     clonedRead->physicalLocation = read->physicalLocation;
     clonedRead->orientation = read->orientation;
+    clonedRead->pair_num = read->pair_num;
+
     return clonedRead;
 }
 
@@ -207,4 +218,5 @@ inline int isPaired(readInfo *read) {
     unsigned int readPaired = readBits((unsigned int)read->valueFlag, 0);
     unsigned int mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
     return readPaired && !mateUnmapped;
+
 }

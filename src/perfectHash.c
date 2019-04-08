@@ -187,10 +187,17 @@ unsigned long long read2Fingerprint(readInfo *read) {
     // QNAME have at most 255 char
     char *buffer = calloc(300, sizeof(char));
     assert(strcpy(buffer, read->Qname));
-    int firstInPair = readBits(read->valueFlag, 6);
-    int secondInPair = readBits(read->valueFlag, 7);
-    assert(firstInPair || secondInPair);
-    char numInPair = digit2char(firstInPair + 2*secondInPair);
+
+    // if (read->valueFlag == 0)
+    //         fprintf(stderr, "in READTOFINGERPRINT on  problem with read %s valueFlag is NULL \n", read->Qname);
+             
+    //int firstInPair = readBits(read->valueFlag, 6);
+    //int secondInPair = readBits(read->valueFlag, 7);
+    //assert(firstInPair || secondInPair);
+    //char numInPair = digit2char(firstInPair + 2*secondInPair);
+
+    assert ( (read->pair_num ==1) || (read->pair_num == 2));
+    char numInPair = digit2char(read->pair_num);
     // string to hash is <QNAME><numberInPair>
     assert(numInPair);
     assert(strcat(buffer, &numInPair));
@@ -203,6 +210,7 @@ unsigned long long read2Fingerprint(readInfo *read) {
 
 /**
  *   @date 2018 Feb 26
+
  *   @brief A universal hash function \f[ h(k) = (ak + b \pmod p) \pmod m \f]
  *   @param hp hash parameter
  *   @param p prime number greater than @p hp.m
@@ -534,6 +542,7 @@ void printPerfectHashTable(hashTable *htbl) {
  */
 
 readInfo *getReadFromFingerprint(hashTable *htbl, size_t fingerprint) {
+    
     // compute which slot read maps to in the main table
     int h1 = univHash(htbl->h, htbl->prime, fingerprint);
     hashParam sechp = htbl->secTable[h1]->h;
@@ -563,11 +572,14 @@ readInfo *getReadFromFingerprint(hashTable *htbl, size_t fingerprint) {
  */
 
 readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *Qname, int PairNum) {
+
+    //fprintf(stderr, "in PerfectHash [getReadFromQnameAndPairNum] problem with read %s of flag %u \n ", read->Qname);
     assert(Qname);
     assert(PairNum == 1 || PairNum == 2);
     /* first in pair = 64, second in pair = 128 */
-    int flag = PairNum * 64;
-    readInfo read = {.Qname = Qname, .valueFlag = flag};
+    //int flag = PairNum * 64;
+    //readInfo read = {.Qname = Qname, .valueFlag = flag};
+    readInfo read = {.Qname = Qname, .pair_num = PairNum};
     size_t fingerprint = read2Fingerprint(&read);
     return getReadFromFingerprint(htbl, fingerprint);
 }
@@ -580,12 +592,26 @@ readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *Qname, int PairNum) 
  */
 
 unsigned long long read2mateFP(readInfo *read) {
-    unsigned int firstInPair  = readBits(read->valueFlag, 6);
-    unsigned int secondInPair = readBits(read->valueFlag, 7);
-    size_t matePairNum  = 2 * firstInPair + secondInPair;
-    assert(matePairNum == 1 || matePairNum == 2);
-    size_t mateFlag = matePairNum * 64;
-    readInfo mate = {.Qname = read->Qname, .valueFlag = mateFlag};
+
+
+    //unsigned int firstInPair  = readBits(read->valueFlag, 6);
+    //unsigned int secondInPair = readBits(read->valueFlag, 7);
+    //size_t matePairNum  = 2 * firstInPair + secondInPair;
+    size_t matePairNum = 0; 
+
+    assert( (read->pair_num == 1) || (read->pair_num == 2));
+    
+    if (read->pair_num == 1 ) matePairNum = 2;
+    if (read->pair_num == 2 ) matePairNum = 1;
+
+    if (!(matePairNum == 1 || matePairNum == 2))
+        fprintf(stderr, "in PerfectHash [read2mateFP] problem with read %s of flag %u \n ", read->Qname, read->valueFlag);
+
+    //matePairNum = 1;
+    //assert(matePairNum == 1 || matePairNum == 2);
+    size_t mateFlag = matePairNum; // * 64;
+    //readInfo mate = {.Qname = read->Qname, .valueFlag = mateFlag};
+    readInfo mate = {.Qname = read->Qname, .pair_num = mateFlag};
     return read2Fingerprint(&mate);
 }
 
@@ -598,6 +624,7 @@ unsigned long long read2mateFP(readInfo *read) {
  */
 
 readInfo *getMateFromRead(hashTable *htbl, readInfo *read) {
+    assert( (read->pair_num == 1) || (read->pair_num == 2));
     unsigned long long mateFP = read2mateFP(read);
     return getReadFromFingerprint(htbl, mateFP);
 }
@@ -614,8 +641,9 @@ static void createHPType(MPI_Datatype *HPType) {
     MPI_Datatype types[3] = {MPI_INT, MPI_INT, MPI_UNSIGNED_LONG_LONG};
     MPI_Aint displacements[3];
 
-    MPI_Aint intex, lb;
+    MPI_Aint intex, ullex, lb;
     MPI_Type_get_extent(MPI_INT, &lb, &intex);
+    MPI_Type_get_extent(MPI_UNSIGNED_LONG_LONG, &lb, &ullex);
 
     displacements[0] = 0;
     displacements[1] = intex;

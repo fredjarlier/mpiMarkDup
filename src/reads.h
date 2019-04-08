@@ -19,31 +19,35 @@ typedef enum {
 } orientation;
 
 typedef struct readInfo {
-    unsigned long long fingerprint;    /**< MD5 of the Qname + number in pair */
+    
 
     char *Qname;                        /**< read name, TODO:we don't need to store Qname, we just use it to compte physical location for optical duplicates */
     char *cigar;                        /**< cigar string, TODO:we don't need to store cigar, we just use it to compute unclipped coordinate */
-    size_t mate_rank;                   /**< the rank where the mate is supposed to be */
-    size_t readLb;                      /**< read library number */
-    size_t readChromosome;              /**< read chromosome number */
-    size_t mateChromosome;              /**< mate chromosome number */
-
+    
+                 /**< mate chromosome number */
+                 
     unsigned int d: 1;                    /**< tell if the read is a duplicate */
     unsigned int checked: 1;              /**< tell the read has already been checked */
     unsigned int check_with_bruck: 2;     /**< the mate is in another buffer we need bruck to check */
     unsigned int external: 1;             /**< it means this read comes from another buffer we don(t mark it as duplicate */
     unsigned int isOpticalDuplicate : 1;  /**< read is optical duplicate ? */
+    unsigned int valueFlag;                   /**< flag of the read */
+    unsigned int pair_num;               /**< tell if the read is first(1) or second in the pair(2) */    
 
+    unsigned long long fingerprint;    /**< MD5 of the Qname + number in pair */
+
+    size_t mate_rank;                   /**< the rank where the mate is supposed to be */
+    size_t readLb;                      /**< read library number */
     size_t coordPos;                    /**< clipped read position (coordinate in sam file) */
     size_t unclippedCoordPos;           /**< unclipped read position */
     size_t coordMatePos;                /**< clipped mate position (coordinate in sam file) */
     size_t phred_score;                 /**< read phred score */
     size_t pairPhredScore;              /**< paired-end phred score */
-    size_t valueFlag;                   /**< flag of the read */
-
-
+    size_t readChromosome;              /**< read chromosome number */
+    size_t mateChromosome; 
     size_t indexAfterSort;              /**< read index in file */
-    size_t mateIndexAfterSort;          /**< mate index in file */
+    size_t mateIndexAfterSort;
+              /**< mate index in file */
     coord physicalLocation;             /**< read physical location (in QNAME) */
     orientation orientation;            /**< fragment or paired-end orientation (reverse strand + first/second in pair) */
 
@@ -57,6 +61,9 @@ typedef struct readInfo {
  */
 
 typedef struct {
+
+    unsigned int pair_num;
+    unsigned int valueFlag;
     unsigned long long fingerprint;   /**< mate fingerprint */
     size_t readLb;
     size_t mateRank;                  /**< mate rank */
@@ -66,6 +73,8 @@ typedef struct {
     size_t coordPos;
     size_t coordMatePos;
     size_t orientation;
+    
+    
 } mateInfo;
 
 //Coordinate Mate Info

@@ -523,7 +523,7 @@ int main (int argc, char *argv[]) {
 
     MPI_Allreduce(&nb_reads_total, &nb_reads_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD); //Sums all of the total reads for each rank into the variable nb_reads_global
     md_log_rank_debug(0, "total read to sort  = %zu \n", nb_reads_global);
-    
+    md_log_rank_debug(0, "number of chromosome  = %d \n", nbchr);
     /*
      *  We write the mapped reads in a file named chrX.bam
      *  We loop by chromosoms.
@@ -1402,7 +1402,7 @@ int main (int argc, char *argv[]) {
 
                 md_log_rank_debug(chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 2] time spent = %f s\n", split_rank, MPI_Wtime() - time_count);
                 
-                if (new_dest_rank) fprintf(stderr, "rank %d :::::[MPISORT][BITONIC 2] number of new dest rank = %zu s\n", split_rank, new_dest_rank) ;
+                //if (new_dest_rank) fprintf(stderr, "rank %d :::::[MPISORT][BITONIC 2] number of new dest rank = %zu s\n", split_rank, new_dest_rank) ;
                 
                 // now we shall update the number of read per rank 
                 // we call new_num_reads_per_job the vector holding 
