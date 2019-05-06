@@ -17,6 +17,9 @@ Release 1.0 from the 06/05/2019 <br />
 
 1) fix reproducibility issues.
 
+We still have a corner case when pairPhredScore for duplicates are identical.<br />
+Need to sort the duplicates list by Qname in markDuplicatePairs.  <br />
+
 Release 1.0 from the 08/04/2019 <br />
 
 1) fix reproducibility issue but still have a corner case.  <br />
