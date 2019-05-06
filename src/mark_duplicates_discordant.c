@@ -479,45 +479,27 @@ void findDuplicaDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *
     MPI_Comm_size(comm, &num_proc);
     
     llist_t *nextCluster = llist_create();
-
-    //llist_readInfo_print(readEndsList);
     lnode_t *firstOfNextCluster = NULL;
-
-    //fprintf(stderr, "rank %d Enter findDuplica \n", rank);
 
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
 
         if (firstOfNextCluster && areComparableForDuplicates(firstOfNextCluster->read, node->read, 1)) {
-            //fprintf(stderr, "Call llist_append \n");
             llist_append(nextCluster, node->read);
 
         } else {
 
             if (nextCluster->size > 1) {                
                 markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
-                //fprintf(stderr, "rank %d after findDuplica 1 totalDuplica = %d \n", rank, *totalDuplica);
             }
-
-            //llist_readInfo_print(nextCluster);
-
             llist_clear(nextCluster);
             llist_append(nextCluster, node->read);
             firstOfNextCluster = node;
-
         }
-
     }
-     //fprintf(stderr, "rank %d in findDuplica we go to nextCluster \n", rank);
-
     if (nextCluster->size > 1) {
-        
         markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
-         //fprintf(stderr, "rank %d after findDuplica 2 totalDuplica = %d \n", rank, *totalDuplica);  
     }
-
-    //llist_readInfo_print(nextCluster);
     llist_clear(nextCluster);
-
     int containsPairs = 0;
     int containsFrags = 0;
     firstOfNextCluster = NULL;
@@ -534,9 +516,6 @@ void findDuplicaDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *
 
             if (nextCluster->size > 1 && containsFrags) {
                 markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
-                //fprintf(stderr, "rank %d after markDuplicateFragments 1 totalDuplica = %d \n", rank, *totalDuplica);
-                //fprintf(stderr, "call markDuplicateFragments \n");
-                //llist_readInfo_print(nextCluster);
             }
             
             llist_clear(nextCluster);

@@ -751,13 +751,32 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
     size_t bestScore = 0;
     readInfo *best = NULL;
 
+    //we search the best node 
     for (lnode_t *node = cluster->head ; node != cluster->nil; node = node->next) {
         assert(node != node->next);
-        //md_log_trace("mark pairs :: %s -- phred = %zu\n", node->read->Qname, node->read->pairPhredScore);
+        
+        // we test the phred score
 
+        // in case the phred score is better
         if (node->read->pairPhredScore > bestScore || best == NULL) {
             bestScore = node->read->pairPhredScore;
             best = node->read;
+            continue;
+        }
+
+        // in case phredscore are equals
+        if (node->read->pairPhredScore == bestScore){
+            
+            // in tiebreak we use index of the read in the file after sorting
+            // 0 should never happend in this case
+            //from markduplicate
+            //https://github.com/broadinstitute/picard/blob/master/src/main/java/picard/sam/markduplicates/MarkDuplicates.java
+            //line 1039
+            if ( best->indexAfterSort > node->read->indexAfterSort) {
+                best = node->read;
+                continue;
+            }            
+            
         }
     }
 
@@ -771,12 +790,6 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
         if (node->read != best) {
 
             node->read->d = 1;
-            /*
-            if ( strcmp(node->read->Qname, "HISEQ5:D1MMMACXX:5:1101:10179:27080") == 0){
-                fprintf (stderr, "found HISEQ5:D1MMMACXX:5:1101:10179:27080 with flag = %u \n", node->read->valueFlag);
-                fprintf(stdout, "read %s is a duplicate \n", node->read->Qname);
-            }
-            */
             node->read->checked = 1;
 
             readInfo *mate = getMateFromRead(htbl, node->read);
@@ -786,23 +799,15 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
 
             if (node->read->indexAfterSort != mate->indexAfterSort) {
                 int mateIsDuplica = markMateDuplicateFlag(htbl, node->read, 1);
-                /*  
-                //fprintf(stderr, "line 784 mateIsDuplica = %d \n", mateIsDuplica);
-                if ( (mateIsDuplica) && strcmp( node->read->Qname, "HISEQ5:D1MMMACXX:5:1101:10179:27080") == 0) 
-                    fprintf(stdout, "mate %s is a duplicate \n", node->read->Qname);
-                */
                 (*totalDuplica) += 1 + mateIsDuplica;
             }
 
             if (node->read->isOpticalDuplicate) {
                 (*totalOpticalDuplicate)++;
             }
-
         }
     }
 
-    //fprintf(stderr, "line 794 in markDuplicatePairs totalDuplicates = %d \n", *totalDuplica);
-    
     best->d = 0;
     best->checked = 1;
     markMateDuplicateFlag(htbl, best, 0);
