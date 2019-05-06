@@ -4,9 +4,9 @@ noinst_HEADERS = $(mpiMDHDR) $(mpiSortHDR)
 
 mpiMD_SOURCES = $(mpiMDSRC) $(mpiSortSRC)
 
-mpiMDSRC = mark_duplicates.c createLBList.c perfectHash.c log.c mpiMD_utils.c reads.c llist.c
+mpiMDSRC = mark_duplicates.c mark_duplicates_discordant.c createLBList.c perfectHash.c log.c mpiMD_utils.c reads.c llist.c
 
-mpiMDHDR = mark_duplicates.h createLBList.h perfectHash.h log.h mpiMD_utils.h common.h reads.h llist.h
+mpiMDHDR = mark_duplicates.h mark_duplicates_discordant.h createLBList.h perfectHash.h log.h mpiMD_utils.h common.h reads.h llist.h
 
 mpiSortSRC = mpiSort.c mpiSort_utils.c mergeSort.c parabitonicsort.c \
 	parabitonicsort2.c parabitonicsort3.c qksort.c parser.c \
