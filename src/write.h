@@ -71,16 +71,36 @@ void writeSam(
 		);
 
 
-size_t init_offset_and_size_free_chr(size_t* offset, int* size, Read* data_chr, int local_readNum);
-void read_data_for_writing(int rank, int num_proc, size_t local_readNum, char *file_name,
-		size_t *number_of_reads_by_procs, size_t *buffs_by_procs, char *** data,
-		int *new_rank, int *new_size, size_t *new_offset, MPI_File in, MPI_Info finfo, MPI_Comm COMM_WORLD);
+size_t init_offset_and_size_free_chr(size_t* offset, 
+									 int* size, 
+									 Read* data_chr, 
+									 int local_readNum);
 
-void bruckWrite(int rank, int num_proc,
-		size_t local_readNum, size_t* number_of_reads_by_procs, int *new_rank,
-		size_t *buffs_by_procs, char*** data2,
-		size_t *new_offset, size_t*** data_offsets,
-		int *new_size, int ***data_size
+void read_data_for_writing(int rank, 
+							int num_proc, 
+							size_t local_readNum, 
+							char *file_name,
+							size_t *number_of_reads_by_procs, 
+							size_t *buffs_by_procs, 
+							char *** data,
+							int *new_rank, 
+							int *new_size, 
+							size_t *new_offset, 
+							MPI_File in, 
+							MPI_Info finfo, 
+							MPI_Comm COMM_WORLD);
+
+void bruckWrite(int rank, 
+				int num_proc,
+				size_t local_readNum, 
+				size_t* number_of_reads_by_procs, 
+				int *new_rank,
+				size_t *buffs_by_procs, 
+				char*** data2,
+				size_t *new_offset, 
+				size_t*** data_offsets,
+				int *new_size, 
+				int ***data_size
 	);
 
 void bruckWrite2(
@@ -119,16 +139,42 @@ void bruckWrite3(
 		size_t ***dest_offset
 );
 
+void bruck_reads(int rank, 
+				int num_proc, 
+				size_t * buffs_by_procs, 
+				char** data2);
 
+void bruck_offsets(int rank, 
+					int num_proc, 
+					int local_readNum, 
+					size_t* number_of_reads_by_procs, 
+					size_t ** data_offsets, 
+					int *new_rank, 
+					size_t* new_offset);
 
+void bruck_size(int rank, 
+				int num_proc, 
+				size_t local_readNum, 
+				size_t* number_of_reads_by_procs, 
+				int ** data_size, 
+				int *new_rank, 
+				int *new_size);
 
-void bruck_reads(int rank, int num_proc, size_t * buffs_by_procs, char** data2);
-void bruck_offsets(int rank, int num_proc, int local_readNum, size_t* number_of_reads_by_procs, size_t ** data_offsets, int *new_rank, size_t* new_offset);
-void bruck_size(int rank, int num_proc, size_t local_readNum, size_t* number_of_reads_by_procs, int ** data_size, int *new_rank, int *new_size);
-
-void writeSam_discordant_and_unmapped(int split_rank, char* output_dir, char* header, size_t local_readNum, char* chrName, Read* chr,
-		int num_proc, MPI_Comm split_comm, char *file_name, MPI_File in, MPI_Info finfo, int compression_level, char *data,
-		size_t offset_data_in_file, int write_sam);
+void writeSam_discordant_and_unmapped(int split_rank, 
+									  char* output_dir, 
+									  char* header, 
+									  size_t local_readNum, 
+									  char* chrName, 
+									  Read* chr,
+									  int num_proc, 
+									  MPI_Comm split_comm, 
+									  char *file_name, 
+									  MPI_File in, 
+									  MPI_Info finfo, 
+									  int compression_level, 
+									  char *data,
+									  size_t offset_data_in_file, 
+									  int write_sam);
 
 
 
@@ -198,8 +244,5 @@ void bruck_size_any_dim(
 		int *new_rank,
 		int *new_size
 		);
-
-
-
 
 #endif

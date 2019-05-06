@@ -44,6 +44,7 @@
 #include "parabitonicsort2.h"
 
 #include "mark_duplicates.h"
+#include "mark_duplicates_discordant.h"
 #include "createLBList.h"
 #include "log.h"
 
@@ -1277,7 +1278,18 @@ void writeSam(
     //fprintf(stderr, "rank %d :::::[MPISORT]  char_buff_uncompressed = %s  \n", rank, char_buff_uncompressed);
     
     char *char_buff_uncompressed_with_duplicates = NULL;
-    char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, previous_local_readNum, header, split_comm);
+    if ( strcmp(chrName, "discordant") == 0 )
+        char_buff_uncompressed_with_duplicates = markDuplicateDiscordant (char_buff_uncompressed, 
+                                                            previous_local_readNum, 
+                                                            header, 
+                                                            split_comm, 
+                                                            chrName);
+    else  
+        char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, 
+                                                            previous_local_readNum, 
+                                                            header, 
+                                                            split_comm, 
+                                                            chrName);
 
     /** COMPRESSION PART * */
 
@@ -3542,7 +3554,11 @@ void writeSam_any_dim(
     free(data_reads_to_sort);
 
     char *char_buff_uncompressed_with_duplicates = NULL;
-    char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, local_readNum, header, split_comm);
+    char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, 
+                                                            local_readNum, 
+                                                            header, 
+                                                            split_comm,
+                                                            chrName);
 
     /** COMPRESSION PART * */
 
