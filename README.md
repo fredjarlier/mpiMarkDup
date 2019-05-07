@@ -99,8 +99,16 @@ First the programm sort the reads by genome's coordinates and extract discordant
 
 Second the programm mark the duplicates for each chromosome and discordant reads according to Picard Markduplicate method. The unmapped and unmapped mates are not marked. To limit memory overhead we build a distributed perfect hash table (see perfectHash.c for details) for fragment list and end list. This way the memory usage is under the memory usage of mpiSort.  <br />
 
-Finally each chromosome is marked and compressed with bgzf and written down in the output folder.
+Finally each chromosome is marked and compressed with bgzf and written down in the output folder. <br />
 
+We test the reproducibility by comparing both pipelines :mpiMD and mpiSORT + Picard (MarkDuplicate). <br />
+We use the same number of cpu for each pipeline. So far We obtain 100% reproducibility. <br />
+
+If the number of cpu differs the reproducibility is not garantee. Indeed tie cases are solved using the index of the read in the sorted file. This index can differ with the number of cpu. <br />
+
+This problem does not impact the results in the downstream analysis. <br />
+
+In conclusion when you test reproducibility always take the same number of cpu. <br />   
 
 Authors and contacts
 --------------------
