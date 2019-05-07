@@ -46,8 +46,7 @@ typedef struct readInfo {
     size_t readChromosome;              /**< read chromosome number */
     size_t mateChromosome; 
     size_t indexAfterSort;              /**< read index in file */
-    size_t mateIndexAfterSort;
-              /**< mate index in file */
+    size_t mateIndexAfterSort;          /**< mate index in file */
     coord physicalLocation;             /**< read physical location (in QNAME) */
     orientation orientation;            /**< fragment or paired-end orientation (reverse strand + first/second in pair) */
 

@@ -756,6 +756,7 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
         assert(node != node->next);
         
         // we test the phred score
+         
 
         // in case the phred score is better
         if (node->read->pairPhredScore > bestScore || best == NULL) {
@@ -765,13 +766,14 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
         }
 
         // in case phredscore are equals
-        if (node->read->pairPhredScore == bestScore){
-            
+        if (node->read->pairPhredScore == bestScore){        
+
             // in tiebreak we use index of the read in the file after sorting
             // 0 should never happend in this case
             //from markduplicate
             //https://github.com/broadinstitute/picard/blob/master/src/main/java/picard/sam/markduplicates/MarkDuplicates.java
             //line 1039
+
             if ( best->indexAfterSort > node->read->indexAfterSort) {
                 best = node->read;
                 continue;
@@ -851,7 +853,22 @@ void markDuplicateFragments(llist_t *cluster, hashTable *htbl, int *totalDuplica
             if (node->read->phred_score > bestScore || best == NULL) {
                 bestScore = node->read->phred_score;
                 best = node->read;
+                continue;
             }
+            /*
+            // in case phredscore are equals
+            if (node->read->phred_score == bestScore){            
+                // in tiebreak we use index of the read in the file after sorting
+                // 0 should never happend in this case
+                //from markduplicate
+                //https://github.com/broadinstitute/picard/blob/master/src/main/java/picard/sam/markduplicates/MarkDuplicates.java
+                //line 1039
+                if ( best->indexAfterSort > node->read->indexAfterSort) {
+                    best = node->read;
+                    continue;
+                }            
+            }
+            */
         }
 
         for (lnode_t *node = cluster->head ; node != cluster->nil; node = node->next) {
@@ -916,45 +933,20 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
     MPI_Comm_size(comm, &num_proc);
     
     llist_t *nextCluster = llist_create();
-
-    //llist_readInfo_print(readEndsList);
     lnode_t *firstOfNextCluster = NULL;
-
-    //fprintf(stderr, "rank %d Enter findDuplica \n", rank);
-
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
 
         if (firstOfNextCluster && areComparableForDuplicates(firstOfNextCluster->read, node->read, 1)) {
-            //fprintf(stderr, "Call llist_append \n");
             llist_append(nextCluster, node->read);
-
         } else {
-
-            if (nextCluster->size > 1) {                
-                markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
-                //fprintf(stderr, "rank %d after findDuplica 1 totalDuplica = %d \n", rank, *totalDuplica);
-            }
-
-            //llist_readInfo_print(nextCluster);
-
+            if (nextCluster->size > 1) markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
             llist_clear(nextCluster);
             llist_append(nextCluster, node->read);
             firstOfNextCluster = node;
-
         }
-
     }
-     //fprintf(stderr, "rank %d in findDuplica we go to nextCluster \n", rank);
-
-    if (nextCluster->size > 1) {
-        
-        markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
-         //fprintf(stderr, "rank %d after findDuplica 2 totalDuplica = %d \n", rank, *totalDuplica);  
-    }
-
-    //llist_readInfo_print(nextCluster);
+    if (nextCluster->size > 1) markDuplicatePairs(nextCluster, htbl, totalDuplica, totalOpticalDuplicate);
     llist_clear(nextCluster);
-
     int containsPairs = 0;
     int containsFrags = 0;
     firstOfNextCluster = NULL;
@@ -971,29 +963,17 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
 
             if (nextCluster->size > 1 && containsFrags) {
                 markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
-                //fprintf(stderr, "rank %d after markDuplicateFragments 1 totalDuplica = %d \n", rank, *totalDuplica);
-                //fprintf(stderr, "call markDuplicateFragments \n");
-                //llist_readInfo_print(nextCluster);
             }
             
             llist_clear(nextCluster);
             llist_append(nextCluster, node->read);
             firstOfNextCluster = node;
             unsigned int readIsPaired = isPaired(node->read);
-            
             containsPairs = readIsPaired ;
             containsFrags = !readIsPaired;
-
         }
-
     }
-   
-    //llist_readInfo_print(nextCluster);
-    //printf("containsFrags : %d, containsPairs : %d \n ",  containsFrags, containsPairs);
-    if ( nextCluster->size > 1 )
-        markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
-    //fprintf(stderr, "rank %d after markDuplicateFragments 2 totalDuplica = %d \n", rank, *totalDuplica);
-    //llist_readInfo_print(nextCluster);
+    if ( nextCluster->size > 1 )    markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
     llist_clear(nextCluster);
     llist_destruct(nextCluster);
 
@@ -1391,11 +1371,9 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList,
     if (read1->unclippedCoordPos == read2->unclippedCoordPos) {
         read2->orientation = FR;
         read1->orientation = FR;
-
     }
 
-    if ( read2->unclippedCoordPos >= read1->unclippedCoordPos ){
-
+   if ( read2->unclippedCoordPos >= read1->unclippedCoordPos ){
         //for discordant cases
         insertReadInList(readEndsList, read1, 0);
         return read2;
@@ -1993,7 +1971,9 @@ void exchangeExternFrag(llist_t *fragList,
 
     md_log_rank_trace(rank, "Found %d/%d mates\n", mateCounter, totalrecv);
 
-
+    /*
+     * this part has moved in markduplicate function 
+     * 
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
         assert(node->read);
         readInfo *mate = getMateFromRead(htbl, node->read);
@@ -2010,9 +1990,9 @@ void exchangeExternFrag(llist_t *fragList,
         if (node->read->pair_num == 1) assert (mate->pair_num == 2); 
         if (node->read->pair_num == 2) assert (mate->pair_num == 1);
     }
+    */
 
     /* free external mates in current library, others reads are free in destroyLBList */
-
     free(matesByProc);
 }
 
@@ -2107,6 +2087,17 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
     md_log_debug("Start to exchange mates ...\n");
     timeStamp = MPI_Wtime();
     exchangeExternFrag(fragList, readEndsList, htbl, interval, comm, discordant_case) ;
+
+    /*
+     * we update pairPhredScore in readEndsList
+     */
+    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
+        assert(node->read);
+        readInfo *mate = getMateFromRead(htbl, node->read);
+        node->read->pairPhredScore += mate->phred_score;
+        node->read->mateIndexAfterSort = mate->indexAfterSort;
+    }
+
     md_log_debug("Finished to exchange mate in %f seconds\n", MPI_Wtime() - timeStamp);
 
     md_log_debug("Start to sort fragments list and read ends list ...\n");

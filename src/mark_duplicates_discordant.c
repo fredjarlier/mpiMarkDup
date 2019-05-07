@@ -453,9 +453,7 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
         if (node->read->pair_num == 1) assert (mate->pair_num == 2); 
         if (node->read->pair_num == 2) assert (mate->pair_num == 1);
     }
-
     /* free external mates in current library, others reads are free in destroyLBList */
-
     free(matesByProc);
 }
 
