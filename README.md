@@ -13,19 +13,21 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 07/05/2019 <br />
+
+1) Fix reproducibility issue with 1 cpu. <br />
+
 Release 1.0 from the 06/05/2019 <br />
 
-1) Fix tiebreak (tested only with power of 2 cpu). <br />
+1) Fix tie case (tested only with power of 2 cpu). <br />
 
 Release 1.0 from the 08/04/2019 <br />
 
 1) fix reproducibility issue but still have a corner case.  <br />
 
-
 Release 1.0 from the 31/03/2019 <br />
 
 1) fix corner case when reads distribution is unbalanced. <br />
-
 
 Release 1.0 from the 28/03/2019 <br />
 
