@@ -92,8 +92,6 @@ int createLBList(char *header2, int *lb_num, char *lb_list[]) {
     char *substr_rg = NULL;
     char *tokenLine = NULL;
     char *saveptr;
-    int i = 0;
-
     char* header = strdup(header2);
     //strtok_r is MT-safe while strtok isn't
     tokenLine = strtok_r(header, "\n", &saveptr);
@@ -143,10 +141,10 @@ static int getLBname(char *tokenLine, char *lb_list[], int *lb_num) {
     const char *lb_tag  = "LB:"; //it is the Library we use not the ID tag
     char *substr_lb     = NULL;
     char *substr_lb2    = NULL;
-    int lb_len          = 0;
     char *tokenTab      = NULL;
-    char *saveptr;
-    int i = 0;
+    char *saveptr       = NULL;
+    int i               = 0;
+    size_t lb_len       = 0;
 
     // we look for LB tag
     substr_lb = strstr(tokenLine, lb_tag);
@@ -207,8 +205,6 @@ int createChrList(char *header2, char *chr_list[]) {
     char *tokenLine = NULL;
     char *saveptr;
     int chr_num = 0;
-    int i = 0;
-
     char* header = strdup(header2);
     //strtok_r is MT-safe while strtok isn't
     tokenLine = strtok_r(header, "\n", &saveptr);
@@ -251,10 +247,10 @@ static int getChrname(char *tokenLine, char *chr_list[], int *chr_num) {
     const char *chr_tag  = "SN:"; //it is the Library we use not the ID tag
     char *substr_chr     = NULL;
     char *substr_chr2    = NULL;
-    int chr_len          = 0;
-    char *tokenTab      = NULL;
-    char *saveptr;
-    int i = 0;
+    char *tokenTab       = NULL;
+    char *saveptr        = NULL;
+    int i                = 0;
+    size_t chr_len       = 0;
 
     // we look for Chr tag
     substr_chr = strstr(tokenLine, chr_tag);

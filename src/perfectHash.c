@@ -114,7 +114,7 @@
 
 static size_t mod(size_t a, size_t b) {
     size_t r = a % b;
-    return r < 0 ? r + b : r;
+    return r = 0 ? r + b : r;
 }
 
 /**
@@ -234,11 +234,11 @@ int univHash(hashParam hp, int p, size_t k) {
  *   @return the amount of slots in the second level.
  */
 
-int computeSpace(hashParam hp, int p, readInfo **arr, int size) {
-    int sum = 0;
+size_t computeSpace(hashParam hp, int p, readInfo **arr, size_t size) {
+    size_t i, sum = 0;
     int *count = calloc(hp.m, sizeof(int));
 
-    for (int i = 0; i < size; i++) {
+    for ( i = 0; i < size; i++) {
         if (arr[i]) {
             count[univHash(hp, p, arr[i]->fingerprint)]++;
         }
@@ -247,7 +247,7 @@ int computeSpace(hashParam hp, int p, readInfo **arr, int size) {
     // for each slot in the main table,
     // we will allocate the square of elements which collide
     // in the second level table.
-    for (int i = 0; i < hp.m; i++) {
+    for ( i = 0; i < hp.m; i++ ) {
         sum += count[i] * count[i];
     }
 
@@ -264,11 +264,11 @@ int computeSpace(hashParam hp, int p, readInfo **arr, int size) {
  *   @param size the size of @p arr
  */
 
-void constructMainUnivHashWithHp(hashParam hp, int *p, readInfo **arr, int size) {
+void constructMainUnivHashWithHp(hashParam hp, int *p, readInfo **arr, size_t size) {
 
     *p = getPrimeGT(hp.m);
 
-    int result = 0;
+    size_t result = 0;
     // We search a prime number so that the hash table size is less than
     // twice of elements to store. In fact, E[\sum_{i=0}^{n-1} m_i] < 2n.
     while ((result = computeSpace(hp, *p, arr, size)) >= 2 * hp.m) {
@@ -286,7 +286,7 @@ void constructMainUnivHashWithHp(hashParam hp, int *p, readInfo **arr, int size)
  *   @param size the size of @p arr
  */
 
-void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, int size) {
+void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, size_t size) {
 
     // There is only one element in the second level hash table, 
     // we know that its index is 0, so choose a, b, p equal to 0.
@@ -313,11 +313,12 @@ void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, int size) {
  *   @note This function is use to ensure that we are collision-free in second level hash table.
  */
 
-int haveCollision(hashParam hp, int prime, size_t *arr, int size) {
+int haveCollision(hashParam hp, int prime, size_t *arr, size_t size) {
     char *count = calloc(hp.m, sizeof(char));
     int flag = 0;
+    size_t i;
 
-    for (int i = 0; i < size; i++) {
+    for ( i = 0; i < size; i++) {
         assert(arr[i]);
         int h = univHash(hp, prime, arr[i]);
 
@@ -341,45 +342,45 @@ int haveCollision(hashParam hp, int prime, size_t *arr, int size) {
  *   @param size the size of @p arr
  */
 
-void constructSecTable(hashTable *htbl, readInfo **arr, int size) {
+void constructSecTable(hashTable *htbl, readInfo **arr, size_t size) {
     // main hash table parameters
     hashParam hp = htbl->h;
-    int prime = htbl->prime;
-
+    size_t i;
+    int bucket;
     int *count = calloc(hp.m, sizeof(int));
     int *index = calloc(hp.m, sizeof(int));
     size_t **subarr = malloc(sizeof(size_t *) * hp.m);
     htbl->secTable = malloc(sizeof(secTable *) * hp.m);
 
     // allocate all second level hash tables
-    for (int i = 0; i < hp.m; i++) {
+    for (i = 0; i < hp.m; i++) {
         htbl->secTable[i] = malloc(sizeof(secTable));
         assert(htbl->secTable[i]);
     }
 
     // count reads distribution on the main table
-    for (int i = 0; i < size; i++) {
+    for ( i = 0; i < size; i++) {
         if (arr[i]) {
             count[univHash(hp, htbl->prime, arr[i]->fingerprint)]++;
         }
     }
 
     // allocate each array of read's fingerprint which map to slot i
-    for (int i = 0; i < hp.m; i++) {
-        subarr[i] = malloc(sizeof(unsigned long long) * count[i]);
+    for (i = 0; i < hp.m; i++) {
+        subarr[i] = malloc(sizeof(size_t) * count[i]);
         assert(subarr[i]);
     }
 
     // fill these array with fingerprint following distribution 
-    for (int i = 0; i < size; i++) {
+    for ( i = 0; i < size; i++) {
         if (arr[i]) {
-            int bucket = univHash(hp, htbl->prime, arr[i]->fingerprint);
+            bucket = univHash(hp, htbl->prime, arr[i]->fingerprint);
             subarr[bucket][index[bucket]++] = arr[i]->fingerprint;
         }
     }
 
     /* compute hash param for each second table */
-    for (int i = 0; i < hp.m; i++) {
+    for ( i = 0; i < hp.m; i++) {
         // second hash table parameters
         // allocate second level hash table with quadratic size
         hashParam sechp = {.a = rand() + 1, .b = rand() + 1, .m = count[i] * count[i]};
@@ -413,13 +414,13 @@ void constructSecTable(hashTable *htbl, readInfo **arr, int size) {
     }
 
     // insert read in their dedicated slot
-    for (int i = 0; i < size; i++) {
+    for ( i = 0; i < size; i++) {
         if (arr[i]) {
             hashTableInsert(htbl, arr[i]);
         }
     }
 
-    for (int i = 0; i < hp.m; i++) {
+    for ( i = 0; i < hp.m; i++) {
         free(subarr[i]);
     }
 
@@ -459,7 +460,7 @@ void hashTableInsert(hashTable *htbl, readInfo *read) {
  *   @param size the size of @p arr
  */
 
-void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, int size) {
+void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, size_t size) {
     int prime;
 
     constructMainUnivHashWithHp(hp, &prime, arr, size);
@@ -478,7 +479,7 @@ void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, int size
  *   @param arr an array of reads
  *   @param size the size of @p arr
  */
-void hashTableInit(hashTable *htbl, readInfo **arr, int size) {
+void hashTableInit(hashTable *htbl, readInfo **arr, size_t size) {
     int prime;
     hashParam hp = {.m = size, .a = 0, .b = 0};
 
@@ -499,7 +500,10 @@ void hashTableInit(hashTable *htbl, readInfo **arr, int size) {
  */
 
 void hashTableDestroy(hashTable *htbl) {
-    for (int i = 0; i < htbl->h.m; i++) {
+    
+    size_t i;
+
+    for (i = 0; i < htbl->h.m; i++) {
         secTable *stbl = htbl->secTable[i];
         free(stbl->table);
         free(stbl);
@@ -518,15 +522,15 @@ void hashTableDestroy(hashTable *htbl) {
  */
 
 void printPerfectHashTable(hashTable *htbl) {
-    printf("Main universal hash function parameters :\na=%d, b=%d, p=%d, m=%llu\n", htbl->h.a, htbl->h.b, htbl->prime, htbl->h.m);
-    printf("allocated space = %d\n", htbl->size);
-
-    for (int i = 0; i < htbl->h.m; i++) {
+    printf("Main universal hash function parameters :\na=%d, b=%d, p=%zu, m=%zu\n", htbl->h.a, htbl->h.b, htbl->prime, htbl->h.m);
+    printf("allocated space = %zu\n", htbl->size);
+    size_t i, j;
+    for (i = 0; i < htbl->h.m; i++) {
         hashParam sechp = htbl->secTable[i]->h;
-        printf("%-3d : a=%-10d, b=%-10d, p=%-4d, m=%-2llu :: ", i, sechp.a, sechp.b, htbl->prime, sechp.m);
+        printf("%zu : a=%-10d, b=%-10d, p=%zu, m=%zu :: ", i, sechp.a, sechp.b, htbl->prime, sechp.m);
 
-        for (int j = 0; j < sechp.m; j++) {
-            printf("(%d-%s-%llu)-", j, htbl->secTable[i]->table[j] == NULL ? "X" : htbl->secTable[i]->table[j]->Qname, htbl->secTable[i]->table[j] == NULL ? 0 : htbl->secTable[i]->table[j]->fingerprint);
+        for (j = 0; j < sechp.m; j++) {
+            printf("(%zu-%s-%llu)-", j, htbl->secTable[i]->table[j] == NULL ? "X" : htbl->secTable[i]->table[j]->Qname, htbl->secTable[i]->table[j] == NULL ? 0 : htbl->secTable[i]->table[j]->fingerprint);
         }
 
         puts("");
@@ -661,18 +665,19 @@ static void createHPType(MPI_Datatype *HPType) {
  *   @param size the size of @p arr
  */
 
-void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, int size, MPI_Comm comm) {
+void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, size_t size, MPI_Comm comm) {
 
     int rank, numprocs;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &numprocs);
     hashParam  hp ;
     int maxSize = 0;
+    size_t i;
     MPI_Allreduce(&size, &maxSize, 1, MPI_INT, MPI_MAX, comm);
 
     int actualSize = 0;
 
-    for (int i = 0; i < size; i++) {
+    for ( i = 0; i < size; i++) {
         if (arr[i]) {
             actualSize++;
         }

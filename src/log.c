@@ -159,17 +159,6 @@ void md_log_all(enum mdLogLevel level, const char *file,  const char *function, 
         char buffer2[LOG_BUF_SIZ];
 
         /* message's header */
-#ifdef LOG_USE_COLOR
-
-        if (level >= MD_LOG_TRACE) {
-            sprintf(buffer1, "rank %4d :: [%02d:%02d:%02d][%s%s\x1b[0m] at %s:%s:%d :: ",  myrank, tm.tm_hour, tm.tm_min, tm.tm_sec, level_colors[level],
-                    get_level_tag(level), file, function, line);
-
-        } else {
-            sprintf(buffer1, "rank %4d :: [%02d:%02d:%02d][%s%s\x1b[0m] ", myrank, tm.tm_hour, tm.tm_min, tm.tm_sec, level_colors[level], get_level_tag(level));
-        }
-
-#else
 
         if (level >= MD_LOG_TRACE) {
             sprintf(buffer1, "rank %4d :: [%02d:%02d:%02d][%s] at %s:%s:%d :: ", myrank, tm.tm_hour, tm.tm_min, tm.tm_sec, get_level_tag(level), file, function,
@@ -179,7 +168,6 @@ void md_log_all(enum mdLogLevel level, const char *file,  const char *function, 
             sprintf(buffer1, "rank %4d :: [%02d:%02d:%02d][%s] ", myrank, tm.tm_hour, tm.tm_min, tm.tm_sec, get_level_tag(level));
         }
 
-#endif
         vsprintf(buffer2, format, argptr);
         strcat(buffer1, buffer2);
 
@@ -242,16 +230,6 @@ void md_log_rank(int rank, enum mdLogLevel level, const char *file,  const char 
         char buffer[LOG_BUF_SIZ] = {0};
 
         if (myrank == rank) {
-#ifdef LOG_USE_COLOR
-
-            if (level >= MD_LOG_TRACE) {
-                sprintf(buffer, "rank %4d :: [%02d:%02d:%02d][%s%s\x1b[0m] at %s:%s:%d :: ", rank, tm.tm_hour, tm.tm_min, tm.tm_sec, level_colors[level], get_level_tag(level), file, context, line);
-
-            } else {
-                sprintf(buffer, "rank %4d :: [%02d:%02d:%02d][%s%s\x1b[0m] ", rank, tm.tm_hour, tm.tm_min, tm.tm_sec, level_colors[level], get_level_tag(level));
-            }
-
-#else
 
             if (level >= MD_LOG_TRACE) {
                 sprintf(buffer, "rank %4d :: [%02d:%02d:%02d][%s] at %s:%s:%d :: ", rank, tm.tm_hour, tm.tm_min, tm.tm_sec, get_level_tag(level), file, context, line);
@@ -260,7 +238,6 @@ void md_log_rank(int rank, enum mdLogLevel level, const char *file,  const char 
                 sprintf(buffer, "rank %4d :: [%02d:%02d:%02d][%s] ", rank, tm.tm_hour, tm.tm_min, tm.tm_sec, get_level_tag(level));
             }
 
-#endif
             strcat(buffer, format);
             vfprintf(stderr, buffer, argptr);
         }

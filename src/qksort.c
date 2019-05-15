@@ -61,7 +61,7 @@ int compare_size_t_V2(const void *a, const void *b){
 
 }
 
-int partition(void *data, size_t esize, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
+int partition(void *data, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
 
 	size_t *a = data;
 	size_t *pval, *temp;
@@ -148,9 +148,9 @@ int partition(void *data, size_t esize, size_t i, size_t k, int (*compare)(const
 
 }
 
-int qksort(void *data, size_t size, size_t esize, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
+int qksort(void *data, size_t size, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
 
-	size_t j;
+	int j;
 
 	/*
 	 * stop recursion when it is not possible to partition further
@@ -166,13 +166,13 @@ int qksort(void *data, size_t size, size_t esize, size_t i, size_t k, int (*comp
 		 */
 
 
-		if ((j = partition(data, esize, i, k, compare)) < 0){
+		if ((j = partition(data, i, k, compare)) < 0){
 			return -1;
 		}
 		/*
 		 * recursively sort the left partition
 		 */
-		if (qksort(data, size, esize, i, j, compare) < 0)
+		if (qksort(data, size, i, j, compare) < 0)
 			return -1;
 		/*
 		 * iterate and sort the right partition

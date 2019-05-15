@@ -53,12 +53,6 @@ enum mdLogLevel {
     MD_LOG_TRACE      ///< All logging enabled.
 };
 
-#ifdef LOG_USE_COLOR
-static const char *level_colors[] = {
-    "\x1b[35m", "\x1b[31m", "\x1b[33m", "\x1b[32m", "\x1b[36m", "\x1b[94m"
-};
-#endif
-
 /// Sets the selected log level.
 void md_set_log_level(enum mdLogLevel level);
 void md_set_log_comm(MPI_Comm comm) ;

@@ -54,7 +54,7 @@ int create_send_datatype_for_offsets(int rank, int size, size_t *num_reads_by_pr
 
 int create_send_datatype_for_reads(int rank, int size, size_t *buffs, char** data, int k, MPI_Datatype* dt, int** recv_index);
 
-size_t get_send_size(int rank, int size, size_t* buffs, size_t** send_size, int count, int k);
+size_t get_send_size(int rank, int size, size_t* buffs, size_t** send_size, int k);
 
 
 

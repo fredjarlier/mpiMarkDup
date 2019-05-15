@@ -54,7 +54,6 @@ void parallel_sort_any_dim(						//dimensions for parabitonic
 		MPI_Comm split_comm,
 		size_t *localReadNumberByChr,
 		char *local_data,
-		char *file_name,
 		char *output_dir,
 		MPI_Info finfo,
 		int compression_level,
@@ -62,6 +61,4 @@ void parallel_sort_any_dim(						//dimensions for parabitonic
 		size_t start_offset_in_file,
 		size_t headerSize,
 		char* header,
-		char *chrName,
-		MPI_File mpi_file_split_comm
-		);
+		char *chrName );

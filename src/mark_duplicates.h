@@ -34,7 +34,6 @@
 
 #include <mpi.h>
 
-#include "log.h"
 #include "mpiMD_utils.h"
 #include "perfectHash.h"
 #include "reads.h"
@@ -49,11 +48,11 @@ typedef struct {
 
 
 int areComparableForDuplicates(readInfo *pair1, readInfo *pair2, const int isPaired);
-void markDuplicateFragments(llist_t *cluster, hashTable *htbl, int *totalDuplica, const int containsPairs);
+void markDuplicateFragments(llist_t *cluster, int *totalDuplica, const int containsPairs);
 void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, int *totalOpticalDuplicate);
 int countExternalMateInList(llist_t *list, size_t *externalMate); 
 readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readIndex, chrInfo *chr, lbInfo *lb,  MPI_Comm comm);
-void insertReadInList(llist_t *l, readInfo *read, const int isFragmentList);
+void insertReadInList(llist_t *l, readInfo *read);
 int ComputePercentageIncrement(size_t readNum, int readSecRatio, int second);
 char* addDuplicateFlag(char *oldReadLine, readInfo *read);
 void checkMateBuffer(readInfo *read, Interval *intervalByProc, MPI_Comm comm);
@@ -74,7 +73,7 @@ Interval getIntervalFromBuffer(char *bufferReads, size_t readNum);
 size_t getMateRankReadSizeBeforeBruck(llist_t *list, mateInfo **mates) ;
 int getPosFromLine(char *samLine);
 char* getReadTagValue(char *token, const char *tag);
-char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm comm, char *chrName) ;
+char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm comm) ;
 int markMateDuplicateFlag(hashTable *htbl, readInfo *read, int d);
 char* writeBuff(char **samTokenLines, readInfo **readArr, size_t readNum);
 void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);

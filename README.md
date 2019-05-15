@@ -13,6 +13,10 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 15/05/2019 <br />
+
+1) Cleaning up the code. <br />
+
 Release 1.0 from the 07/05/2019 <br />
 
 1) Fix reproducibility issue with 1 cpu. <br />

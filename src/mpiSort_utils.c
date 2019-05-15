@@ -45,10 +45,10 @@
 #include "log.h"
 #include "parser.h"
 
-void get_coordinates_and_offset_source_and_size_and_free_reads(int rank, int *local_read_rank, size_t *coordinates, size_t* offset, int* size, Read* data_chr, int local_readNum){
+void get_coordinates_and_offset_source_and_size_and_free_reads(int rank, int *local_read_rank, size_t *coordinates, size_t* offset, int* size, Read* data_chr, size_t local_readNum){
 
    	size_t j;
-   	Read* chr = data_chr, *tmp;
+   	Read* chr = data_chr;
 
    	//we initialize offset source and size_source
    	for(j = 0; j < local_readNum; j++){
@@ -64,8 +64,7 @@ void get_coordinates_and_offset_source_and_size_and_free_reads(int rank, int *lo
    		coordinates[j] = chr->coord;
    		offset[j] = chr->offset_source_file;
    		size[j] = (int)chr->offset; //read length
-        tmp  = chr;
-		chr = chr->next;
+        chr = chr->next;
         //free(tmp);
    	}
 
@@ -73,7 +72,7 @@ void get_coordinates_and_offset_source_and_size_and_free_reads(int rank, int *lo
 
 
 size_t init_coordinates_and_size(int rank, int *local_reads_rank, size_t *local_reads_index,
-		size_t* coordinates, int* size, Read* data_chr, int local_readNum)
+		size_t* coordinates, int* size, Read* data_chr, size_t local_readNum)
 {
 	size_t dataSize = 0;
 	size_t j;
@@ -101,7 +100,7 @@ size_t init_coordinates_and_size(int rank, int *local_reads_rank, size_t *local_
 }
 
 size_t init_coordinates_and_size2(int rank, int *local_reads_rank,
-		size_t* coordinates, int* size, Read* data_chr, int local_readNum)
+		size_t* coordinates, int* size, Read* data_chr, size_t local_readNum)
 {
 	size_t dataSize = 0;
 	size_t j;
@@ -132,7 +131,8 @@ void chosen_split_rank_gather_size_t(MPI_Comm split_comm, int rank, int num_proc
 		size_t *start_size_per_job, size_t *all_data, size_t *data, size_t start_index)
 {
 	MPI_Status status;
-	size_t j, k;
+	size_t k;
+	int j2;
 	//size_t *temp_buf = malloc(sizeof(size_t));
 
 
@@ -146,22 +146,22 @@ void chosen_split_rank_gather_size_t(MPI_Comm split_comm, int rank, int num_proc
 			st++;
 		}
 
-		for(j = 0; j < num_proc; j++){
+		for(j2 = 0; j2 < num_proc; j2++){
 
-			if (j != master && size_per_jobs[j] != 0){
+			if (j2 != master && size_per_jobs[j2] != 0){
 
 				/*
 				temp_buf  = realloc(temp_buf, size_per_jobs[j]*sizeof(size_t));
 				assert( temp_buf !=0);
 				*/
 
-				size_t temp_buf[size_per_jobs[j]];
-				temp_buf[size_per_jobs[j]] = 0;
+				size_t temp_buf[size_per_jobs[j2]];
+				temp_buf[size_per_jobs[j2]] = 0;
 				assert(temp_buf !=0 );
-				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, split_comm, &status);
+				MPI_Recv(temp_buf, size_per_jobs[j2], MPI_LONG_LONG_INT, j2, 0, split_comm, &status);
 
-				size_t st = start_size_per_job[j];
-				for (k = 0; k < size_per_jobs[j]; k++){
+				size_t st = start_size_per_job[j2];
+				for (k = 0; k < size_per_jobs[j2]; k++){
 					all_data[st] = temp_buf[k];
 					st++;
 				}

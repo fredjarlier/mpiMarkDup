@@ -34,8 +34,8 @@
 
 char digit2char(int n) ;
 int fastqToPhred (char ch) ;
-int getLine(char** offset, char* text, char** tokenLine);
-int getTokenTab(char **offset, char *text, char **tokenTab) ;
+int getLine(char** offset, char** tokenLine);
+int getTokenTab(char **offset, char **tokenTab) ;
 char* strapp(char* dest, char* src ) ;
 unsigned int readBits(unsigned int x, int k) ;
 void writeBits(unsigned int *x, int k) ;

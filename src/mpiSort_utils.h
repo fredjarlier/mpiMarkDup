@@ -42,7 +42,7 @@ void get_coordinates_and_offset_source_and_size_and_free_reads(
 		size_t* offset,
 		int* size,
 		Read* data_chr,
-		int local_readNum
+		size_t local_readNum
 		);
 
 size_t init_coordinates_and_size(
@@ -52,7 +52,7 @@ size_t init_coordinates_and_size(
 		size_t* coordinates,
 		int* size,
 		Read* data_chr,
-		int local_readNum
+		size_t local_readNum
 		);
 
 

@@ -52,7 +52,7 @@ typedef struct {
     int64_t block_address;
     int block_length;
     int block_offset;
-	int cache_size;
+	  int cache_size;
     const char* error;
 	void *cache; // a pointer to a hash table
 } BGZF;

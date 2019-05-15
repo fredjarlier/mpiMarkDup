@@ -50,7 +50,7 @@
 #include "log.h"
 
 typedef struct {
-    unsigned long long m;
+    size_t m;
     int a;
     int b;
 } hashParam;
@@ -62,14 +62,14 @@ typedef struct {
 
 typedef struct {
     hashParam h;
-    int prime;
-    int size;
+    size_t prime;
+    size_t size;
     secTable **secTable;
 } hashTable;
 
 // Utils
-int computeSpace(hashParam hp, int p, readInfo **arr, int size);
-int haveCollision(hashParam hp, int prime, size_t *arr, int size);
+size_t computeSpace(hashParam hp, int p, readInfo **arr, size_t size);
+int haveCollision(hashParam hp, int prime, size_t *arr, size_t size);
 void printPerfectHashTable(hashTable *htbl);
 
 // Conversion
@@ -78,12 +78,12 @@ unsigned long long read2Fingerprint(readInfo *read);
 unsigned long long string2MD5(char *str);
 
 // Construction 
-void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, int size);
-void constructMainUnivHashWithHp(hashParam hp, int *p, readInfo **arr, int size);
-void constructSecTable(hashTable *htbl, readInfo **arr, int size);
-void hashTableInit(hashTable *htbl, readInfo **arr, int size);
-void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, int size);
-void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, int size, MPI_Comm comm) ;
+void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, size_t size);
+void constructMainUnivHashWithHp(hashParam hp, int *p, readInfo **arr, size_t size);
+void constructSecTable(hashTable *htbl, readInfo **arr, size_t size);
+void hashTableInit(hashTable *htbl, readInfo **arr, size_t size);
+void hashTableInitWithHp(hashTable *htbl, hashParam hp, readInfo **arr, size_t size);
+void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, size_t size, MPI_Comm comm) ;
 
 // get element
 readInfo *getReadFromFingerprint(hashTable *htbl, size_t fingerprint);

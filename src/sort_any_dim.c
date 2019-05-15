@@ -70,7 +70,6 @@ void parallel_sort_any_dim(
 		MPI_Comm split_comm,
 		size_t *localReadNumberByChr,
 		char *local_data,
-		char *file_name,
 		char *output_dir,
 		MPI_Info finfo,
 		int compression_level,
@@ -78,11 +77,10 @@ void parallel_sort_any_dim(
 		size_t start_offset_in_file,
 		size_t headerSize,
 		char* header,
-		char *chrNames,
-		MPI_File mpi_file_split_comm
-		){
+		char *chrNames ){
 
-	size_t j;
+	size_t k, j;
+	int j2;
 
 	size_t *local_reads_coordinates_unsorted;
 	local_reads_coordinates_unsorted = (size_t*)malloc(local_readNum*sizeof(size_t));
@@ -146,7 +144,7 @@ void parallel_sort_any_dim(
 	//if the local coordinates to sort are to big we could get rid of
 	//this step.
 	base_arr2 = local_reads_coordinates_unsorted;
-	qksort(coord_index, local_readNum, sizeof(size_t), 0, local_readNum - 1, compare_size_t);
+	qksort(coord_index, local_readNum, 0, local_readNum - 1, compare_size_t);
 
 	//We index data
 	for(j = 0; j < local_readNum; j++){
@@ -198,8 +196,7 @@ void parallel_sort_any_dim(
 		all_reads_sizes 		= malloc (total_num_read * sizeof(int));
 		all_reads_rank 			= malloc (total_num_read * sizeof(int));
 
-		size_t k =0;
-
+		
 		for (k = 0; k < total_num_read; k++){
 			all_reads_sizes[k] 			= 0;
 			all_reads_coordinates[k] 	= 0;
@@ -247,15 +244,15 @@ void parallel_sort_any_dim(
 	if (split_rank == chosen_split_rank){
 
 		start_num_reads_per_jobs[0] = 0;
-		int k = 0;
-		for (k = 1; k < (split_size + 1); k++){
-			start_num_reads_per_jobs[k] = num_reads_per_jobs[k-1];
+		
+		for (j2 = 1; j2 < (split_size + 1); j2++){
+			start_num_reads_per_jobs[j2] = num_reads_per_jobs[j2-1];
 		}
 
-		for (k = 1; k < split_size; k++){
-			size_t tmp = start_num_reads_per_jobs[k - 1];
-			size_t tmp2 = start_num_reads_per_jobs[k];
-			start_num_reads_per_jobs[k] = tmp + tmp2;
+		for (j2 = 1; j2 < split_size; j2++){
+			size_t tmp = start_num_reads_per_jobs[j2 - 1];
+			size_t tmp2 = start_num_reads_per_jobs[j2];
+			start_num_reads_per_jobs[j2] = tmp + tmp2;
 		}
 	}
 
@@ -264,13 +261,12 @@ void parallel_sort_any_dim(
 	 * in all_vector_
 	 */
 	double time_count  = MPI_Wtime();
-	double time_count1 = MPI_Wtime();
-
+	
 	if (split_rank ==chosen_split_rank){
 
 		MPI_Status status;
 		//we copy the first elements in
-		int k=0;
+		
 		size_t st = start_num_reads_per_jobs[chosen_split_rank];
 		for (k = 0; k < num_reads_per_jobs[chosen_split_rank]; k++){
 			all_reads_rank[st] 			= local_reads_rank_sorted[k];
@@ -280,24 +276,24 @@ void parallel_sort_any_dim(
 			st++;
 		}
 
-		for(j = 0; j < split_size; j++){
-			if(j != chosen_split_rank){
+		for(j2 = 0; j2 < split_size; j2++){
+			if(j2 != chosen_split_rank){
 
 				// first we care for ranks
-				int *temp_buf 		= malloc(num_reads_per_jobs[j]* sizeof(int));
-				int *temp_buf1 		= malloc(num_reads_per_jobs[j]* sizeof(int));
-				size_t *temp_buf2 	= malloc(num_reads_per_jobs[j]* sizeof(size_t));
-				size_t *temp_buf3 	= malloc(num_reads_per_jobs[j]* sizeof(size_t));
+				int *temp_buf 		= malloc(num_reads_per_jobs[j2]* sizeof(int));
+				int *temp_buf1 		= malloc(num_reads_per_jobs[j2]* sizeof(int));
+				size_t *temp_buf2 	= malloc(num_reads_per_jobs[j2]* sizeof(size_t));
+				size_t *temp_buf3 	= malloc(num_reads_per_jobs[j2]* sizeof(size_t));
 
-				MPI_Recv(temp_buf, num_reads_per_jobs[j], MPI_INT, j, 0, split_comm, &status);
-				MPI_Recv(temp_buf1, num_reads_per_jobs[j], MPI_INT, j, 1, split_comm, &status);
-				MPI_Recv(temp_buf2, num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 2, split_comm, &status);
-				MPI_Recv(temp_buf3, num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 3, split_comm, &status);
+				MPI_Recv(temp_buf, num_reads_per_jobs[j], MPI_INT, j2, 0, split_comm, &status);
+				MPI_Recv(temp_buf1, num_reads_per_jobs[j], MPI_INT, j2, 1, split_comm, &status);
+				MPI_Recv(temp_buf2, num_reads_per_jobs[j], MPI_LONG_LONG_INT, j2, 2, split_comm, &status);
+				MPI_Recv(temp_buf3, num_reads_per_jobs[j], MPI_LONG_LONG_INT, j2, 3, split_comm, &status);
 
 				st=0;
-				size_t st = start_num_reads_per_jobs[j];
+				size_t st = start_num_reads_per_jobs[j2];
 
-				for (k = 0; k < num_reads_per_jobs[j]; k++){
+				for (k = 0; k < num_reads_per_jobs[j2]; k++){
 					all_reads_rank[st] = temp_buf[k];
 					all_reads_sizes[st] = temp_buf1[k];
 					all_offsets_sources[st] = temp_buf2[k];
@@ -380,10 +376,10 @@ void parallel_sort_any_dim(
 
 	// each job create a vector with with the length
 	// of the offset vector for each job in [0, dimension[
-	for (j = 0; j < dimensions ; j++){
+	for (j2 = 0; j2 < dimensions ; j2++){
 		// we add pbs_num_coordinates_to_recieve_left
 		// because we want the vector to have the size size
-		pbs_local_num_read_per_job[j] = pbs_num_coordinates_to_recieve + pbs_num_coordinates_to_recieve_left;
+		pbs_local_num_read_per_job[j2] = pbs_num_coordinates_to_recieve + pbs_num_coordinates_to_recieve_left;
 	}
 
 	// the lastest rank get the reads that left
@@ -394,15 +390,15 @@ void parallel_sort_any_dim(
 	if (split_rank == chosen_split_rank){
 
 		pbs_start_num_coordinates_per_jobs[0] = 0;
-		int k = 0;
-		for (k = 1; k < (dimensions +1); k++){
-			pbs_start_num_coordinates_per_jobs[k] = pbs_local_num_read_per_job[k-1];
+		
+		for (j2 = 1; j2 < (dimensions +1); j2++){
+			pbs_start_num_coordinates_per_jobs[j2] = pbs_local_num_read_per_job[j2-1];
 		}
-		for (k = 1; k < dimensions; k++){
-			size_t tmp = pbs_start_num_coordinates_per_jobs[k - 1];
-			size_t tmp2 = pbs_start_num_coordinates_per_jobs[k];
+		for (j2 = 1; j2 < dimensions; j2++){
+			size_t tmp = pbs_start_num_coordinates_per_jobs[j2 - 1];
+			size_t tmp2 = pbs_start_num_coordinates_per_jobs[j2];
 			// we remove the left over reads
-			pbs_start_num_coordinates_per_jobs[k] = tmp + tmp2 - pbs_num_coordinates_to_recieve_left;
+			pbs_start_num_coordinates_per_jobs[j2] = tmp + tmp2 - pbs_num_coordinates_to_recieve_left;
 		}
 	}
 
@@ -437,7 +433,7 @@ void parallel_sort_any_dim(
 		else {
 			//first we copy the data from the master job
 			size_t ind = pbs_start_num_coordinates_per_jobs[chosen_split_rank];
-			int k = 0;
+			
 
 			for (k = 0; k < pbs_local_num_read_per_job[chosen_split_rank]; k++){
 				pbs_local_reads_coordinates[k] = all_reads_coordinates[ind];
@@ -445,15 +441,15 @@ void parallel_sort_any_dim(
 				ind++;
 			}
 
-			for(j = 0; j < dimensions; j++){
+			for(j2 = 0; j2 < dimensions; j2++){
 
-				if (j != chosen_split_rank){
+				if (j2 != chosen_split_rank){
 
 					MPI_Send(
-							&all_reads_coordinates[pbs_start_num_coordinates_per_jobs[j]],
-							pbs_local_num_read_per_job[j],
+							&all_reads_coordinates[pbs_start_num_coordinates_per_jobs[j2]],
+							pbs_local_num_read_per_job[j2],
 							MPI_LONG_LONG_INT,
-							j,
+							j2,
 							chosen_split_rank,
 							split_comm
 							);
@@ -504,9 +500,9 @@ void parallel_sort_any_dim(
 				pbs_num_coordinates_to_recieve_left
 				);
 
-		size_t k1 = 0;
-		for (k1 = 1; k1 < pbs_local_num_read_per_job[split_rank]; k1++){
-			assert( pbs_local_reads_coordinates[k1 - 1] <= pbs_local_reads_coordinates[k1]);
+		
+		for (k = 1; k < pbs_local_num_read_per_job[split_rank]; k++){
+			assert( pbs_local_reads_coordinates[k - 1] <= pbs_local_reads_coordinates[k]);
 		}
 
 	//	if (split_rank == chosen_split_rank)
@@ -515,9 +511,9 @@ void parallel_sort_any_dim(
         md_log_rank_debug(chosen_split_rank, "[SORT_ANY_DIM] Time in parallel bitonic sort  %f seconds\n", MPI_Wtime() - time_count);
 		//we compute a new total number of reads
 		size_t total_num_read_after_bitonic_sort = 0;
-		int k=0;
-		for (k = 0; k < dimensions; k++){
-			total_num_read_after_bitonic_sort += pbs_local_num_read_per_job[k];
+		
+		for (j2 = 0; j2 < dimensions; j2++){
+			total_num_read_after_bitonic_sort += pbs_local_num_read_per_job[j2];
 		}
 
 		// now we gather all the pbs_local_dest_offset_index
@@ -541,14 +537,14 @@ void parallel_sort_any_dim(
 
 			pbs_start_num_coordinates_per_jobs[0] = 0;
 
-			for (k = 1; k < (dimensions +1); k++){
-				pbs_start_num_coordinates_per_jobs[k] = pbs_local_num_read_per_job[k-1];
+			for (j2 = 1; j2 < (dimensions +1); j2++){
+				pbs_start_num_coordinates_per_jobs[j2] = pbs_local_num_read_per_job[j2-1];
 			}
-			for (k = 1; k < dimensions; k++){
-				size_t tmp = pbs_start_num_coordinates_per_jobs[k - 1];
-				size_t tmp2 = pbs_start_num_coordinates_per_jobs[k];
+			for (j2 = 1; j2 < dimensions; j2++){
+				size_t tmp = pbs_start_num_coordinates_per_jobs[j2 - 1];
+				size_t tmp2 = pbs_start_num_coordinates_per_jobs[j2];
 				// we remove the left over reads
-				pbs_start_num_coordinates_per_jobs[k] = tmp + tmp2;
+				pbs_start_num_coordinates_per_jobs[j2] = tmp + tmp2;
 			}
 		}
 
@@ -676,7 +672,7 @@ void parallel_sort_any_dim(
 
 	}
 	else {
-		size_t k=0;
+		
 		size_t ind = start_num_reads_per_jobs[chosen_split_rank];
 
 		for (k = 0; k < (num_reads_per_jobs[chosen_split_rank]); k++){
@@ -690,25 +686,25 @@ void parallel_sort_any_dim(
 			ind++;
 		}
 
-		for(j = 0; j < split_size; j++){
+		for(j2 = 0; j2 < split_size; j2++){
 
-			if (j != chosen_split_rank){
+			if (j2 != chosen_split_rank){
 				//fprintf(stderr, "%d ::::: [send_size_t_master_to_all] rank %d send %zu to %d from %zu\n",
 				//	rank, rank, size_per_jobs[j], j, start_size_per_job[j]);
-				MPI_Send(&all_offset_dest_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 0, split_comm);
+				MPI_Send(&all_offset_dest_sorted[start_num_reads_per_jobs[j2]],
+						num_reads_per_jobs[j2], MPI_LONG_LONG_INT, j2, 0, split_comm);
 
-				MPI_Send(&all_offsets_sources_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 1, split_comm);
+				MPI_Send(&all_offsets_sources_sorted[start_num_reads_per_jobs[j2]],
+						num_reads_per_jobs[j2], MPI_LONG_LONG_INT, j2, 1, split_comm);
 
-				MPI_Send(&all_reads_coordinates_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_LONG_LONG_INT, j, 2, split_comm);
+				MPI_Send(&all_reads_coordinates_sorted[start_num_reads_per_jobs[j2]],
+						num_reads_per_jobs[j2], MPI_LONG_LONG_INT, j2, 2, split_comm);
 
-				MPI_Send(&all_reads_size_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_INT, j, 3, split_comm);
+				MPI_Send(&all_reads_size_sorted[start_num_reads_per_jobs[j2]],
+						num_reads_per_jobs[j2], MPI_INT, j2, 3, split_comm);
 
-				MPI_Send(&all_reads_rank_sorted[start_num_reads_per_jobs[j]],
-						num_reads_per_jobs[j], MPI_INT, j, 4, split_comm);
+				MPI_Send(&all_reads_rank_sorted[start_num_reads_per_jobs[j2]],
+						num_reads_per_jobs[j2], MPI_INT, j2, 4, split_comm);
 
 			}
 		}
@@ -749,12 +745,9 @@ void parallel_sort_any_dim(
 			local_readNum,
 			total_reads_by_chr,
 			chrNames,
-			reads[i],
 			split_size,
 			split_comm,
 			chosen_split_rank,
-			file_name,
-			mpi_file_split_comm,
 			finfo,
 			compression_level,
 			local_dest_offsets_sorted,

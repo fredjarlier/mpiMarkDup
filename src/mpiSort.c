@@ -122,49 +122,40 @@ int opticalDistance;
 int main (int argc, char *argv[]) {
 
     char *x, *y, *z, *xbuf, *hbuf, *chrNames[MAXNBCHR];
-    int fd;
     off_t hsiz;
     struct stat st;
 
     MPI_File mpi_filed;
     MPI_File mpi_file_split_comm;
-
-    MPI_Offset fileSize, unmapped_start, discordant_start;
-    int num_proc, rank;
-    int res, nbchr, i, paired, write_sam;
+    MPI_Offset fileSize, unmapped_start;
+    int num_proc, rank, fd;
+    int res, nbchr, i;
     int ierr, errorcode = MPI_ERR_OTHER;
+    int g_rank, g_size;
+    int split_rank, split_size; //after split communication we update the rank and the size
+    int compression_level;
+    //int paired = 0;
     char *file_name, *output_dir;
-
     char *header;
-
     unsigned int headerSize;
     unsigned char threshold;
-
     size_t input_file_size;
     size_t unmappedSize = 0;
     size_t discordantSize = 0;
     size_t *readNumberByChr = NULL, *localReadNumberByChr = NULL;
-    Read **reads;
-
     double time_count;
-    double time_count1;
-    int g_rank, g_size;
+    double toc;
+    Read **reads;    
     MPI_Comm split_comm; //used to split communication when jobs have no reads to sort
-    int split_rank, split_size; //after split communication we update the rank and the size
-    double tic, toc;
-    int compression_level;
-    size_t fsiz, lsiz, loff;
     const char *sort_name;
     MPI_Info finfo;
-
 
     /* Set default values */
     compression_level = 3;
     parse_mode = MODE_OFFSET;
     sort_name = "coordinate";
-    paired = 0;
+    
     threshold = 0;
-    write_sam = 0;
     opticalDistance = 0;
     int logSeverity = -1;
 
@@ -183,10 +174,6 @@ int main (int argc, char *argv[]) {
             case 'n':
                 parse_mode = MODE_NAME;
                 sort_name = "queryname";
-                break;
-
-            case 'p': /* Paired reads */
-                paired = 1;
                 break;
 
             case 'q': /* Quality threshold */
@@ -386,20 +373,12 @@ int main (int argc, char *argv[]) {
     input_file_size = (long long)fileSize;
 
     /* Get chunk offset and size */
-    fsiz = input_file_size;
-    lsiz = fsiz / num_proc;
-    loff = rank * lsiz;
-
-    tic = MPI_Wtime(); //Returns an elapsed time on the calling processor.
-
     headerSize = unmappedSize = discordantSize = strlen(header);
 
     //We place file offset of each process to the begining of one read's line
     size_t *goff = (size_t *)calloc((size_t)(num_proc + 1), sizeof(size_t));
-    init_goff(mpi_filed, hsiz, input_file_size, num_proc, rank, goff);
+    init_goff(mpi_filed, hsiz, input_file_size, num_proc, goff);
 
-    //We calculate the size to read for each process
-    lsiz = goff[rank + 1] - goff[rank];
     //NOW WE WILL PARSE
     size_t j = 0;
     size_t poffset = goff[rank]; //Current offset in file sam
@@ -468,11 +447,12 @@ int main (int argc, char *argv[]) {
         }
 
         //Now we parse Read in local_data
+
         parser_paired(local_data_tmp, rank, poffset, threshold, nbchr, &readNumberByChr, chrNames, &reads);
 
         //now we copy local_data_tmp in local_data
         char *p = local_data_tmp;
-        int pos = 0;
+        size_t pos = 0;
 
         while (*p && (pos < local_data_tmp_sz)) {
             *q = *p;
@@ -513,9 +493,10 @@ int main (int argc, char *argv[]) {
 
     //We count how many reads we found
     size_t nb_reads_total = 0, nb_reads_global = 0;
+    int j2 = 0;
 
-    for (j = 0; j < nbchr; j++) {
-        nb_reads_total += readNumberByChr[j];
+    for (j2 = 0; j2 < nbchr; j2++) {
+        nb_reads_total += readNumberByChr[j2];
     }
 
     //nb_reads_total per rank
@@ -693,8 +674,6 @@ int main (int argc, char *argv[]) {
                                                 g_size,
                                                 unmappedSize,
                                                 headerSize,
-                                                (i),
-                                                localReadNumberByChr[i],
                                                 split_comm
                                                 );
 
@@ -716,13 +695,10 @@ int main (int argc, char *argv[]) {
                         reads[i],
                         split_size,
                         split_comm,
-                        file_name,
-                        mpi_file_split_comm2,
                         finfo,
                         compression_level,
                         local_data,
-                        goff[rank],
-                        write_sam);
+                        goff[rank]);
 
                         //if (split_rank == chosen_rank) {
                         //    fprintf(stderr, "rank %d :::::[MPISORT] Time to write chromosom %s ,  %f seconds \n\n\n", split_rank, chrNames[nbchr - s], MPI_Wtime() - time_count);
@@ -1123,7 +1099,7 @@ int main (int argc, char *argv[]) {
 
                 //A QUOI SERT qksort
 
-                qksort(coord_index, local_readNum, sizeof(size_t), 0, local_readNum - 1, compare_size_t);
+                qksort(coord_index, local_readNum, 0, local_readNum - 1, compare_size_t);
                 //It looks like qksort inverts the values in coord_index
 
                 //if (split_rank == chosen_split_rank) {
@@ -1187,7 +1163,7 @@ int main (int argc, char *argv[]) {
                 md_log_rank_debug(chosen_split_rank, "[MPISORT][BITONIC 2] time spent = %f s\n", split_rank, MPI_Wtime() - time_count);
 
                 size_t k1;
-                size_t tmp2 = 0;
+                int k2; 
 
                 for (k1 = 1; k1 < max_num_read; k1++) {
                     assert(local_reads_coordinates_sorted[k1 - 1] <= local_reads_coordinates_sorted[k1]);//Checking if it's sorted
@@ -1214,8 +1190,7 @@ int main (int argc, char *argv[]) {
                 last_local_offset = local_offset_dest_sorted[max_num_read - 1];
 
                 //number of block to send
-                int blocksize = 1;
-
+              
                 MPI_Offset *y  = calloc(split_size, sizeof(MPI_Offset));
                 MPI_Offset *y2 = calloc(split_size + 1, sizeof(MPI_Offset));
 
@@ -1225,14 +1200,14 @@ int main (int argc, char *argv[]) {
                 MPI_Gather(&last_local_offset, 1, MPI_LONG_LONG_INT, y, 1, MPI_LONG_LONG_INT, 0, split_comm);
 
                 if (split_rank == 0) {
-                    for (k1 = 1; k1 < (split_size + 1); k1++) {
-                        y2[k1] = y[k1 - 1];
+                    for (k2 = 1; k2 < (split_size + 1); k2++) {
+                        y2[k2] = y[k2 - 1];
                     }
                 }
 
                 if (split_rank == 0) {
-                    for (k1 = 1; k1 < (split_size + 1); k1++) {
-                        y2[k1] = y2[k1 - 1] + y2[k1];
+                    for (k2 = 1; k2 < (split_size + 1); k2++) {
+                        y2[k2] = y2[k2 - 1] + y2[k2];
                     }
                 }
 
@@ -1283,11 +1258,9 @@ int main (int argc, char *argv[]) {
                 //we need the number of zeros we add for the padding
                 size_t N0 = max_num_read * dimensions - total_num_read;
 
-                int new_rank = 0;
                 // we compute the new rank for
                 // the reads sorted by offset destination
-                size_t h = 0;
-
+                int h2 = 0;
 
                 pos_ref0 = max_num_read * split_rank - N0;
                 //fprintf(stderr, "[MPISORT] chosen_split_rank = %d \n", chosen_split_rank);
@@ -1297,24 +1270,17 @@ int main (int argc, char *argv[]) {
                     if ( local_reads_sizes_sorted[j] != 0) {
                         int new_rank = chosen_split_rank;
                         pos_ref0 = (max_num_read * split_rank + j) - N0;
-
-                        if (pos_ref0 >= 0) {
-                            size_t tmp2 = 0;
-
-                            for (h = 0; h < dimensions; h++) {
-                                tmp2 += previous_num_reads_per_job[h];//computes the true nb of reads for the current chromosome?
-
-                                if ( pos_ref0 < tmp2)  {
-                                    new_rank = h;
-                                    break;
-                                }
+                        size_t tmp2 = 0;
+                        for (h2 = 0; h2 < dimensions; h2++) {
+                            tmp2 += previous_num_reads_per_job[h2];//computes the true nb of reads for the current chromosome?
+                            if ( pos_ref0 < tmp2)  {
+                                new_rank = h2;
+                                break;
                             }
-                            int previous_rank = local_dest_rank_sorted[j];
-                            local_dest_rank_sorted[j] = new_rank;
                         }
+                        local_dest_rank_sorted[j] = new_rank;
                     }
                 }
-
                 MPI_Barrier(split_comm);
 
                 /* Algorithm of overLap
@@ -1349,9 +1315,10 @@ int main (int argc, char *argv[]) {
                         MPI_Recv(&previous_rank_last_dest, 1, MPI_INT, split_rank-1, 1, split_comm, MPI_STATUS_IGNORE);
                 }
 
-                int j=0;
-                int j2=0;
-                int j3=0;
+                size_t j  = 0;
+                size_t j2 = 0;
+                size_t j3 = 0;
+                int j4    = 0;
                 //we jump zeros we are in padded vector
                 while(local_reads_coordinates_sorted[j]==0) {j++;j2++;j3++;}                
 
@@ -1371,14 +1338,14 @@ int main (int argc, char *argv[]) {
                 int current_dest_rank = 0;
                 
                 //we return to the first non 0 indices
-                j  = j3;
+                j = j3;
                 
                 previous_coordinates  = local_reads_coordinates_sorted[j3];
                 previous_dest_rank    = local_dest_rank_sorted[j3];
                 
                 j3++;
 
-                for (int j = j3; j < max_num_read; j++) {
+                for (j = j3; j < max_num_read; j++) {
                 
                     current_coordinates = local_reads_coordinates_sorted[j];
                     current_dest_rank    = local_dest_rank_sorted[j];                   
@@ -1412,15 +1379,14 @@ int main (int argc, char *argv[]) {
                 // the vector num_reads_per_dest_rank holds the local number of reads
                 // according to the destination rank 
                 size_t *num_reads_per_dest_rank = malloc(dimensions * sizeof(size_t));
-                for (j = 0; j < dimensions; j++) num_reads_per_dest_rank[j] = 0;
+                for (j4 = 0; j4 < dimensions; j4++) num_reads_per_dest_rank[j4] = 0;
 
                 // we fill the num_reads_per_dest_rank
                 for (j = 0; j < max_num_read; j++){
                     if ( local_reads_sizes_sorted[j] != 0){
                         num_reads_per_dest_rank[local_dest_rank_sorted[j]]++;
                     }	
-                }
-                
+                }                
                 
                 //we check if changing rank of destination doesn't affect the total read to sort 
 
@@ -1580,6 +1546,7 @@ int main (int argc, char *argv[]) {
                  */
 
                 size_t m = 0;
+                int m_int = 0;
                 int num_proc = dimensions;
                 size_t *number_of_reads_by_procs = calloc( dimensions, sizeof(size_t));
 
@@ -1598,11 +1565,8 @@ int main (int argc, char *argv[]) {
                 }
 
                 size_t count6 = 0;
-
-                for (m = 0; m < dimensions; m++) {
-                    count6 += number_of_reads_by_procs[m];
-                }
-
+                for (m_int = 0; m_int < dimensions; m_int++) count6 += number_of_reads_by_procs[m_int];
+                
                 assert( count6 == num_read_for_bruck );
                 MPI_Barrier(split_comm);
 
@@ -1684,26 +1648,27 @@ int main (int argc, char *argv[]) {
                 j = 0;
                 size_t k = 0;
 
-                for (m = 0; m < num_proc; m++) {
-                    for (k = 0; k < number_of_reads_by_procs[m]; k++) {
-                        local_offset_dest_sorted_trimmed[k + j]         = dest_offsets[m][k];
-                        local_dest_rank_sorted_trimmed[k + j]           = dest_rank[m][k];
-                        local_reads_sizes_sorted_trimmed[k + j]         = read_size[m][k];
-                        local_offset_source_sorted_trimmed[k + j]       = local_source_offsets[m][k];
-                        local_reads_coordinates_sorted_trimmed[k + j]   = reads_coordinates[m][k];
-                        local_source_rank_sorted_trimmed[k + j]         = source_rank[m][k];
+                for (m_int = 0; m_int < num_proc; m_int++) {
+
+                    for (k = 0; k < number_of_reads_by_procs[m_int]; k++) {
+
+                        local_offset_dest_sorted_trimmed[k + j]         = dest_offsets[m_int][k];
+                        local_dest_rank_sorted_trimmed[k + j]           = dest_rank[m_int][k];
+                        local_reads_sizes_sorted_trimmed[k + j]         = read_size[m_int][k];
+                        local_offset_source_sorted_trimmed[k + j]       = local_source_offsets[m_int][k];
+                        local_reads_coordinates_sorted_trimmed[k + j]   = reads_coordinates[m_int][k];
+                        local_source_rank_sorted_trimmed[k + j]         = source_rank[m_int][k];
 
                     }
 
-                    free(dest_offsets[m]);
-                    free(dest_rank[m]);
-                    free(read_size[m]);
-                    free(local_source_offsets[m]);
-                    free(reads_coordinates[m]);
-                    free(source_rank[m]);
-                    j += number_of_reads_by_procs[m];
+                    free(dest_offsets[m_int]);
+                    free(dest_rank[m_int]);
+                    free(read_size[m_int]);
+                    free(local_source_offsets[m_int]);
+                    free(reads_coordinates[m_int]);
+                    free(source_rank[m_int]);
+                    j += number_of_reads_by_procs[m_int];
                 }
-
 
                 free(number_of_reads_by_procs);
 
@@ -1762,14 +1727,10 @@ int main (int argc, char *argv[]) {
                     output_dir,
                     header,
                     local_readNum,
-                    total_reads_by_chr,
                     chrNames[i],
-                    reads[i],
                     split_size,
                     split_comm,
                     chosen_split_rank,
-                    file_name,
-                    mpi_file_split_comm,
                     finfo,
                     compression_level,
                     local_offset_dest_sorted_trimmed,
@@ -1808,7 +1769,6 @@ int main (int argc, char *argv[]) {
                     split_comm,
                     localReadNumberByChr,
                     local_data,
-                    file_name,
                     output_dir,
                     finfo,
                     compression_level,
@@ -1816,9 +1776,7 @@ int main (int argc, char *argv[]) {
                     goff[rank],
                     headerSize,
                     header,
-                    chrNames[i],
-                    mpi_file_split_comm
-                );
+                    chrNames[i]  );
 
             } //end if dimensions < split_rank
 
@@ -1850,7 +1808,7 @@ int main (int argc, char *argv[]) {
     free(goff);
     free(local_data);
 
-    for (int i = 0; i < nbchr; i++) {
+    for ( i = 0; i < nbchr; i++) {
         Read *tmp = reads[i], *next;
 
         while (tmp) {
@@ -1866,7 +1824,7 @@ int main (int argc, char *argv[]) {
     free(localReadNumberByChr); //ok
 
 
-    for (i = 0; i < nbchr; i++) {
+    for ( i = 0; i < nbchr; i++) {
         free(chrNames[i]);
     }
 

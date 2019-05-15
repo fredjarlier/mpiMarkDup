@@ -38,9 +38,9 @@
 
 char parse_mode;
 
-size_t hash_name(char *line, int max) {
-    int i, j;
-    size_t result = 0;
+size_t hash_name(char *line, size_t max) {
+    
+    size_t i, j, result = 0;
 
     for (i = 0, j = 0; i < strlen(line); i++) {
         if ( (line[i] >= 'A' && line[i] <= 'Z') || (line[i] >= 'a' && line[i] <= 'z') ) {
@@ -63,13 +63,13 @@ size_t hash_name(char *line, int max) {
     return result;
 }
 
-void init_goff(MPI_File mpi_filed, unsigned int headerSize, size_t fsize, int numproc, int rank, size_t *goff) {
+void init_goff(MPI_File mpi_filed, unsigned int headerSize, size_t fsize, int numproc, size_t *goff) {
 
 
     char *current_line = NULL;
     MPI_Status status;
     int i = 0;
-    int j = 0;
+    size_t j = 0;
 
     size_t lsize = fsize / numproc;
     goff[0] = headerSize;
@@ -103,7 +103,7 @@ void parser_paired(char *localData, int rank, size_t start_offset, unsigned char
     char *currentCarac;
     char currentLine[MAX_LINE_SIZE];
     unsigned char quality;
-    unsigned int i, chr, nbchr = 0, mchr;
+    int i, chr, mchr, nbchr = 0;
     int lastChr = -1;
     int next;
     size_t lineSize, offset_read_in_source_file;
@@ -156,10 +156,11 @@ void parser_paired(char *localData, int rank, size_t start_offset, unsigned char
             coord = strtoull(currentLine, NULL, strlen(currentLine));
             //coord = strtoull(currentLine, NULL, strlen(currentLine));
             coord = hash_name(currentLine, 16);
-
+            /*
             if (!rank) {
                 printf("%s => %zu\n", currentLine, coord);
             }
+            */
 
             strtoull(currentCarac, &currentCarac, 10);
 

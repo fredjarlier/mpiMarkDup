@@ -34,7 +34,6 @@
 
 #include <mpi.h>
 
-#include "log.h"
 #include "mpiMD_utils.h"
 #include "perfectHash.h"
 #include "reads.h"
@@ -43,10 +42,10 @@
 #include "createLBList.h"
 #include "mark_duplicates.h"
  
-void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, Interval interval, MPI_Comm comm);
-int parseLibrariesDiscordant(char *bufferReads, Interval *intervalByProc, llist_t *fragList, llist_t *readEndsList, readInfo ***readArr, char ***samTokenLines, size_t readNum, size_t readIndex, chrInfo *chr, lbInfo *lb, MPI_Comm comm);
+void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, MPI_Comm comm);
+size_t parseLibrariesDiscordant(char *bufferReads, Interval *intervalByProc, llist_t *fragList, llist_t *readEndsList, readInfo ***readArr, char ***samTokenLines, size_t readNum, size_t readIndex, chrInfo *chr, lbInfo *lb, MPI_Comm comm);
 readInfo *buildReadEndsDiscordant(readInfo *read1, readInfo *read2, llist_t *readEndsList, int case_insert);
-char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, MPI_Comm comm, char *chrName);
+char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, MPI_Comm comm);
 void findDuplicaDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int *totalDuplica, int *totalOpticalDuplicate, MPI_Comm comm);
 
 #endif

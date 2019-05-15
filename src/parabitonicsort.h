@@ -65,8 +65,7 @@ void Merge_split(
 		size_t local_list[],
 		size_t local_index[],
 		int which_keys,
-		int partner,
-		int my_rank
+		int partner
 		);
 void Merge_list_low(
 		size_t  list_size,
@@ -84,14 +83,12 @@ void Merge_list_high(
 		);
 int bitonic_qksort(void *data,
 		size_t size,
-		size_t esize,
 		size_t i,
 		size_t k,
 		int (*compare)(const void *key1, const void *key2)
 		);
 
 int bitonic_partition(void *data,
-		size_t esize,
 		size_t i,
 		size_t k,
 		int (*compare)(const void *key1, const void *key2)

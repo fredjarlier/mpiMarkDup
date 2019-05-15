@@ -447,7 +447,7 @@ static void cache_block(BGZF *fp, int size)
 	cache_t *p;
 	khash_t(cache) *h = (khash_t(cache)*)fp->cache;
 	if (MAX_BLOCK_SIZE >= fp->cache_size) return;
-	if ((kh_size(h) + 1) * MAX_BLOCK_SIZE > fp->cache_size) {
+	if ((kh_size(h) + 1) * MAX_BLOCK_SIZE > (unsigned int)fp->cache_size) {
 		/* A better way would be to remove the oldest block in the
 		 * cache, but here we remove a random one for simplicity. This
 		 * should not have a big impact on performance. */
@@ -486,7 +486,7 @@ bgzf_read_block(BGZF* fp)
         return 0;
     }
 	size = count;
-    if (count != sizeof(header)) {
+    if (count != (int)sizeof(header)) {
         report_error(fp, "read failed");
         return -1;
     }
@@ -627,11 +627,11 @@ int bgzf_close(BGZF* fp)
     if (fp->open_mode == 'w') {
         if (bgzf_flush(fp) != 0) return -1;
 		{ // add an empty block
-			int count, block_length = deflate_block(fp, 0);
+			int block_length = deflate_block(fp, 0);
 #ifdef _USE_KNETFILE
-			count = fwrite(fp->compressed_block, 1, block_length, fp->x.fpw);
+			fwrite(fp->compressed_block, 1, block_length, fp->x.fpw);
 #else
-			count = fwrite(fp->compressed_block, 1, block_length, fp->file);
+			fwrite(fp->compressed_block, 1, block_length, fp->file);
 #endif
 		}
 #ifdef _USE_KNETFILE
@@ -678,8 +678,9 @@ int bgzf_check_EOF(BGZF *fp)
 #else
 	offset = ftello(fp->file);
 	if (fseeko(fp->file, -28, SEEK_END) != 0) return -1;
-	fread(buf, 1, 28, fp->file);
-	fseeko(fp->file, offset, SEEK_SET);
+	size_t u = fread(buf, 1, 28, fp->file);
+    assert(u);
+    fseeko(fp->file, offset, SEEK_SET);
 #endif
 	return (memcmp(magic, buf, 28) == 0)? 1 : 0;
 }

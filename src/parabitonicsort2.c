@@ -205,7 +205,7 @@ void Local_sort2(
 	}
 
 	base_arr2 = local_keys;
-	bitonic_qksort2(index_vector, list_size, sizeof(size_t), 0, list_size - 1, compare_size_t);
+	bitonic_qksort2(index_vector, list_size, 0, list_size - 1, compare_size_t);
 
 	//then we apply loac index to local_keys
 	for(j = 0; j < list_size; j++){
@@ -282,8 +282,7 @@ void Par_bitonic_sort_incr2(
             		local_list3,
             		local_list4,
             		LOW,
-            		partner,
-            		my_rank
+            		partner
             		);
         }
         else{
@@ -296,8 +295,7 @@ void Par_bitonic_sort_incr2(
             		local_list3,
             		local_list4,
             		HIGH,
-            		partner,
-            		my_rank
+            		partner
             		);
         }
         eor_bit = eor_bit >> 1;
@@ -339,8 +337,7 @@ void Par_bitonic_sort_decr2(
             		local_list3,
             		local_list4,
             		LOW,
-            		partner,
-            		my_rank
+            		partner
             );
         }
         else{
@@ -352,8 +349,7 @@ void Par_bitonic_sort_decr2(
             		local_list3,
             		local_list4,
             		HIGH,
-            		partner,
-            		my_rank
+            		partner
             );
         }
         eor_bit = eor_bit >> 1;
@@ -371,8 +367,7 @@ void Merge_split2(
         size_t    *local_list4  /* in/out */,
         int       *local_list5  /* in/out */,
         int       which_keys    /* in     */,
-        int       partner       /* in     */,
-        int 	  rank			/* in 	  */) {
+        int       partner       /* in     */) {
 
 	 int number_amount;
 	 size_t k=0;
@@ -406,8 +401,7 @@ void Merge_split2(
 	 size_t *interbuff = NULL;
 	 res = MPI_Alloc_mem((5*list_size)*sizeof(size_t), MPI_INFO_NULL, &interbuff);
 	 assert(res == MPI_SUCCESS);
-	 size_t *pos_buff=interbuff;
-
+	 
 	 for ( k = 0 ; k < list_size; k++ ){
 		 interbuff[k] 				=  local_list1[k];
 		 interbuff[k + list_size] 	=  (size_t)local_list2[k];
@@ -598,7 +592,7 @@ void Merge_list_high2(
     size_t counter =0;
     int  rank;
     MPI_Comm_rank(COMM_WORLD, &rank);
-    for (i = list_size - 1; i >= 0; i--){
+    for (i = list_size - 1;; i--){
 
         if (list_key[index1] >= list_tmp_key[index2]) {
 
@@ -623,6 +617,8 @@ void Merge_list_high2(
 
         if (counter >= list_size)
             break;
+
+        if (i == 0) break;
     }
 
     for (i = 0; i < list_size; i++){
@@ -645,9 +641,9 @@ void Merge_list_high2(
  * -------------------------            qksort          ------------------------------
  */
 
-int bitonic_qksort2(void *data, size_t size, size_t esize, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
+int bitonic_qksort2(void *data, size_t size, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
 
-	size_t j;
+	int j;
 
 	/*
 	 * stop recursion when it is not possible to partition further
@@ -662,14 +658,14 @@ int bitonic_qksort2(void *data, size_t size, size_t esize, size_t i, size_t k, i
 		 * find where to partition the elements
 		 */
 
-		if ((j = bitonic_partition2(data, esize, i, k, compare)) < 0){
+		if ((j = bitonic_partition2(data, i, k, compare)) < 0){
 			return -1;
 		}
 
 		/*
 		 * recursively sort the left partition
 		 */
-		if (bitonic_qksort2(data, size, esize, i, j, compare) < 0)
+		if (bitonic_qksort2(data, size, i, j, compare) < 0)
 			return -1;
 
 		/*
@@ -681,7 +677,7 @@ int bitonic_qksort2(void *data, size_t size, size_t esize, size_t i, size_t k, i
 }
 
 
-int bitonic_issort2(void *data, size_t size, size_t esize, int (*compare)(const void *key, const void *key2)){
+int bitonic_issort2(void *data, size_t size, int (*compare)(const void *key, const void *key2)){
 
 	size_t *a = data;
 	size_t *key;
@@ -693,9 +689,10 @@ int bitonic_issort2(void *data, size_t size, size_t esize, int (*compare)(const 
 	for ( j = 1; j < size; j++){
 		memcpy(key, &a[j], sizeof(size_t));
 		i = j - 1;
-		while (i >= 0 && compare(&a[i], key) > 0){
+		while ( compare(&a[i], key) > 0 ){
 			memcpy(&a[(i + 1)], &a[i], sizeof(size_t));
-			i--;
+			if (i == 0) break;
+            i--;
 		}
 		memcpy(&a[(i + 1)], key, sizeof(size_t));
 	}
@@ -705,7 +702,7 @@ int bitonic_issort2(void *data, size_t size, size_t esize, int (*compare)(const 
 
 }
 
-int bitonic_partition2(void *data, size_t esize, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
+int bitonic_partition2(void *data, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
 
 	size_t *a = data;
 	size_t *pval, *temp;

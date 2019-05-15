@@ -49,14 +49,10 @@ void writeSam(
 		char* output_dir,
 		char* header,
 		size_t local_readNum,
-		size_t total_num_read,
 		char* chrName,
-		Read* chr,
 		int total_num_proc,  //this is the number of proc in split communication
 		MPI_Comm split_comm,
 		int master_rank,
-		char *file_name,
-		MPI_File in,
 		MPI_Info finfo,
 		int compression_level,
 		size_t* new_offset_dest,
@@ -168,13 +164,10 @@ void writeSam_discordant_and_unmapped(int split_rank,
 									  Read* chr,
 									  int num_proc, 
 									  MPI_Comm split_comm, 
-									  char *file_name, 
-									  MPI_File in, 
 									  MPI_Info finfo, 
 									  int compression_level, 
 									  char *data,
-									  size_t offset_data_in_file, 
-									  int write_sam);
+									  size_t offset_data_in_file);
 
 
 
@@ -186,12 +179,9 @@ void writeSam_any_dim(
 		size_t local_readNum,
 		size_t total_num_read,
 		char* chrName,
-		Read* chr,
 		int total_num_proc,  //this is the number of proc in split communication
 		MPI_Comm split_comm,
 		int master_rank,
-		char *file_name,
-		MPI_File in,
 		MPI_Info finfo,
 		int compression_level,
 		size_t* new_offset_dest,

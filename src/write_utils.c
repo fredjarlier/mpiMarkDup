@@ -54,7 +54,7 @@ void create_read_dt(int rank, int num_proc, int *ranks, int* buffs, char** data,
 
  	//Count variable
  	int i;
-
+ 	size_t j;
  	//Variable for datatype struct almost classic
  	MPI_Aint indices[readNum];
  	int blocklens[readNum];
@@ -79,7 +79,7 @@ void create_read_dt(int rank, int num_proc, int *ranks, int* buffs, char** data,
 
  	//double time_count = MPI_Wtime();
  	//Set all classic datatype values
- 	for(i = 0; i < readNum; i++){
+ 	for(j = 0; j < readNum; j++){
  		/*  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TRICKY PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  		 * Basically what we say here is that the i(th) item that we are going to read goes to the data row corresponding to it's destination rank
  		 *
@@ -105,11 +105,11 @@ void create_read_dt(int rank, int num_proc, int *ranks, int* buffs, char** data,
  		 */
  		//Set indices
  		//ranks[i] tell the position in adresse to write by elements
- 		indices[i] = adress_to_write_in_data_by_element[ranks[i]];
+ 		indices[j] = adress_to_write_in_data_by_element[ranks[j]];
 
  		//printf("num_proc %d - %d/%d     /    indices: %p   /   buffs: %d    /    ranks: %d\n", size, i, readNum, indices[i], buffs[i], ranks[i]);
  		//Increment position to write for ranks[i]
- 		adress_to_write_in_data_by_element[ranks[i]] += buffs[i];
+ 		adress_to_write_in_data_by_element[ranks[j]] += buffs[j];
 
  		/*
  		if (rank == 1 ){
@@ -118,15 +118,15 @@ void create_read_dt(int rank, int num_proc, int *ranks, int* buffs, char** data,
  		}
  		*/
  		//Set blocklens
- 		blocklens[i] = buffs[i];
+ 		blocklens[j] = buffs[j];
 
  		//Set oldtype
- 		oldtypes[i] = MPI_CHAR;
+ 		oldtypes[j] = MPI_CHAR;
  	}
 
 
- 	for(i = 0; i < readNum; i++){
- 		assert (indices[i] != (MPI_Aint)NULL);
+ 	for(j = 0; j < readNum; j++){
+ 		assert (indices[j] != (MPI_Aint)NULL);
  	}
 
 
@@ -316,7 +316,7 @@ int create_send_datatype_for_reads(int rank, int size, size_t *buffs, char** dat
 	return count;
 }
 
-size_t get_send_size(int rank, int size, size_t* buffs, size_t** send_size, int count, int k)
+size_t get_send_size(int rank, int size, size_t* buffs, size_t** send_size, int k)
 {
 	int i, j;
 
@@ -358,7 +358,8 @@ void send_size_t_all_to_master(int rank, int num_proc, int master, size_t size, 
 		size_t *start_size_per_job, size_t *all_data, size_t *data)
 {
 	MPI_Status status;
-	int j, k;
+	int j;
+	size_t k;
 	if (rank == master){
 		//we copy element for rank master_2
 		size_t st = start_size_per_job[master];
@@ -393,7 +394,8 @@ void send_size_t_all_to_master_bitonic(int rank, int num_proc, int master, size_
 		size_t *start_size_per_job, size_t *all_data, size_t *data, size_t start_index)
 {
 	MPI_Status status;
-	int j, k;
+	int j;
+	size_t k;
 
 	if (rank == master){
 		// we copy element for rank master_2
@@ -431,7 +433,8 @@ void send_size_t_all_to_master_bitonic_V2(int rank, int num_proc, int master, si
 		size_t *start_size_per_job, size_t *all_data, size_t *data, size_t start_index)
 {
 	MPI_Status status;
-	int j, k;
+	int j;
+	size_t k;
 
 	if (rank == master){
 		// we copy element for rank master_2
@@ -481,7 +484,9 @@ void send_size_t_master_to_all(int rank, int num_proc, int master, size_t size, 
 		size_t *start_size_per_job, size_t *all_data, size_t *data)
 {
 	MPI_Status status;
-	int j, k;
+	int j;
+	size_t k;
+
 	if (rank != master){
 		//fprintf(stderr, "%d ::::: [send_size_t_master_to_all] rank %d recv %zu from %d \n",rank, rank, size, master);
 
@@ -514,7 +519,8 @@ void send_size_t_master_to_all(int rank, int num_proc, int master, size_t size, 
 void send_int_all_to_master(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs, size_t *start_size_per_job, int *all_data, int *data)
 {
 	MPI_Status status;
-	int j, k;
+	int j;
+	size_t k;
 	if (rank == master){
 		//we copy element for rank master_2
 		size_t st = start_size_per_job[master];
@@ -548,7 +554,8 @@ void send_int_all_to_master(int rank, int num_proc, int master, size_t size, siz
 void send_int_master_to_all(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs, size_t *start_size_per_job, int *all_data, int *data)
 {
 	MPI_Status status;
-	int j, k;
+	int j;
+	size_t k;
 
 	if (rank != master){
 		MPI_Recv(data, size, MPI_INT, master, 0, COMM_WORLD, &status);

@@ -377,12 +377,20 @@ coord computePhysicalLocation(readInfo *read) {
 readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readIndex, chrInfo *chr, lbInfo *lb,  MPI_Comm comm) {
 
     int rank, num_proc;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &num_proc);
     char *q = sam_buff;
     char *tokenCar;
-    readInfo *read = calloc(1, sizeof(readInfo));
+    char *u;
+    unsigned int readUnmapped;
+    unsigned int mateUnmapped;
+    unsigned int secondaryAlignment;
+    unsigned int supplementaryAlignment;
+    unsigned int firstInPair;
     int i = 0;
+    size_t score;
+    readInfo *read = calloc(1, sizeof(readInfo));
+   
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &num_proc);
 
     read->indexAfterSort = readIndex;
 
@@ -398,23 +406,20 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 break;
 
             case 0:
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
                 read->Qname = tokenCar;
                 break;
 
             case 1: // Flag part
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
                 read->valueFlag  = atoi(tokenCar);
                 
                 assert(read->valueFlag);    
-		        unsigned int readUnmapped = readBits((unsigned int)read->valueFlag, 2);
-                unsigned int mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
-                unsigned int readReverseStrand = readBits((unsigned int)read->valueFlag, 4);
-                unsigned int secondaryAlignment = readBits((unsigned int)read->valueFlag, 8);
-                unsigned int supplementaryAlignment = readBits((unsigned int)read->valueFlag, 11);
-
-
-                unsigned int firstInPair = readBits((unsigned int)read->valueFlag, 6);
+		        readUnmapped = readBits((unsigned int)read->valueFlag, 2);
+                mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
+                secondaryAlignment = readBits((unsigned int)read->valueFlag, 8);
+                supplementaryAlignment = readBits((unsigned int)read->valueFlag, 11);
+                firstInPair = readBits((unsigned int)read->valueFlag, 6);
                 //fprintf (stderr, "[IN readParsing] ::: read->Qname = %s ::: firstInPair = %u \n", read->Qname, firstInPair);
                 //fprintf (stderr, "[IN readParsing] ::: read->Qname = %s ::: flag = %u \n", read->Qname, read->valueFlag );
                 if (firstInPair == 1)
@@ -456,7 +461,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 break;
 
             case 2: // RNAME part
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
 
                 /* read's chromosome is the same as its previous read */
                 if (strcmp(chr->chrList[chr->lastChr], tokenCar) == 0) {
@@ -475,13 +480,13 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 break;
 
             case 3: // The position chromosome wise
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
                 read->coordPos = atoll(tokenCar);
                 free(tokenCar);
                 break;
 
             case 5: // the CIGAR string
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
                 read->cigar = tokenCar;
                 assert(read->cigar);
 
@@ -498,7 +503,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 break;
 
             case 6: // the RNEXT
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
 
                 /* mate chromosome same as read chromosome */
                 if (strcmp(tokenCar, "=") == 0) {
@@ -518,7 +523,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
 
 
             case 7: // here we have the PNEXT, the position of the next read
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
                 read->coordMatePos = atoll(tokenCar);
 
                 // we tell if the mate is in the buffer
@@ -530,10 +535,10 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                 break;
 
             case 10:
-                getTokenTab(&q, sam_buff, &tokenCar);
+                getTokenTab(&q, &tokenCar);
                 // here we got the quality string
-                char *u = tokenCar;
-                size_t score = 0;
+                u = tokenCar;
+                score = 0;
 
                 //we loop the token char and compute quality
                 while (*u) {
@@ -560,7 +565,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                  * prevent overflow.
                  */
 
-                read->phred_score = min(read->phred_score, 0x7FFF / 2);
+                read->phred_score = min(read->phred_score, (size_t) (0x7FFF / 2));
                 read->pairPhredScore = read->phred_score;
                 free(tokenCar);
                 break;
@@ -586,7 +591,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
     assert(read->fingerprint);
 
     //Now we search in the flag for LB name
-    while (getTokenTab(&q, sam_buff, &tokenCar)) {
+    while (getTokenTab(&q, &tokenCar)) {
         if (strncmp(tokenCar, "LB:Z:", strlen("LB:Z:")) == 0) {
             //fillReadLBValue(tokenCar, read);
             char *lbName = getReadTagValue(tokenCar, "LB:Z:");
@@ -829,7 +834,7 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
       not be marked as duplicates.  This will set the duplicate index for only list items are fragments.
  */
 
-void markDuplicateFragments(llist_t *cluster, hashTable *htbl, int *totalDuplica, const int containsPairs) {
+void markDuplicateFragments(llist_t *cluster, int *totalDuplica, const int containsPairs) {
 
     if (containsPairs) {
         for (lnode_t *node = cluster->head ; node != cluster->nil; node = node->next) {
@@ -962,7 +967,7 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
         } else {
 
             if (nextCluster->size > 1 && containsFrags) {
-                markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
+                markDuplicateFragments(nextCluster, totalDuplica, containsPairs);
             }
             
             llist_clear(nextCluster);
@@ -973,7 +978,7 @@ void findDuplica(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int 
             containsFrags = !readIsPaired;
         }
     }
-    if ( nextCluster->size > 1 )    markDuplicateFragments(nextCluster, htbl, totalDuplica, containsPairs);
+    if ( nextCluster->size > 1 )    markDuplicateFragments(nextCluster,totalDuplica, containsPairs);
     llist_clear(nextCluster);
     llist_destruct(nextCluster);
 
@@ -1080,33 +1085,33 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &num_proc);
     int *scounts, *sdispls, *rcounts, *rdispls;
-
+    size_t m;
     scounts = calloc(num_proc, sizeof(int));
 
     // Compute reads to send by rank
-    for (int m = 0; m < numberOfReadsToSend; m++) {
+    for ( m = 0; m < numberOfReadsToSend; m++) {
         scounts[mates[m].mateRank]++;
     }
 
     int totalrecv = computeCountAndDispl(scounts, &sdispls, &rcounts, &rdispls, comm);
 
     /* Trace reads to send */
-    for (int i = 0; i < numberOfReadsToSend; i++) {
+    for ( m = 0; m < numberOfReadsToSend; m++) {
 
         //assert (mates[i].pair_num == 1 || mates[i].pair_num == 2);
 
         md_log_rank_trace(rank, "send :: lb=%zu, mateRank=%zu, score=%zu, index=%zu, unclippedPos=%zu, Pos=%zu, matePos=%zu, orientation=%zu, fingerprint=%zu, valueFlag = %u, pair_num = %u \n",
-        mates[i].readLb,
-        mates[i].mateRank,
-        mates[i].phredScore,
-        mates[i].indexAfterSort,
-        mates[i].unclippedCoordPos,
-        mates[i].coordPos,
-        mates[i].coordMatePos,
-        mates[i].orientation,
-        mates[i].fingerprint,
-        mates[i].valueFlag,
-        mates[i].pair_num);
+        mates[m].readLb,
+        mates[m].mateRank,
+        mates[m].phredScore,
+        mates[m].indexAfterSort,
+        mates[m].unclippedCoordPos,
+        mates[m].coordPos,
+        mates[m].coordMatePos,
+        mates[m].orientation,
+        mates[m].fingerprint,
+        mates[m].valueFlag,
+        mates[m].pair_num);
     }
 
     /* End of trace */
@@ -1205,9 +1210,10 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
  *   @param[in] comm        Communicator over which data is to be exchanged (handle).
  *   @note see J.L. Träff et al.[2014] paper, Implementing a Classic: Zero-copy All-to-all Communication with MPI Datatypes
  *   @bug there is an invalid write/read when we use, for instance, 7 processors
- */
+ 
 
-void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) {
+void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
+    void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) {
 
     int rank, num_proc;
     MPI_Comm_rank(comm, &rank);
@@ -1223,7 +1229,6 @@ void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
 
     MPI_Aint lb, sendtotal, recvtotal;
     int recvsize;
-    int intersize = 0;
     void *interbuf = malloc(sendcount * num_proc * sizeof(void));
     MPI_Datatype recvblocktype, sendblocktype;
     MPI_Type_get_extent(sendtype, &lb, &sendtotal);
@@ -1232,12 +1237,12 @@ void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
     recvtotal *= recvcount;
     MPI_Type_size(recvtype, &recvsize);
     recvsize *= recvcount;
-
     unsigned int mask = 0xFFFFFFFF;
-
-    for (int k = 1; k < num_proc; k <<= 1) {
-        int b = 0;
-        int j = k;
+    int k,b;
+    unsigned int j;
+    for (k = 1; k < num_proc; k <<= 1) {
+        b = 0;
+        j = (unsigned int)k;
 
         do { // bit j set
             int sendrank = (rank - j + num_proc) % num_proc;
@@ -1302,6 +1307,7 @@ void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
 
     free(interbuf);
 }
+*/
 
 /**
  * @date 2018 Apr 15
@@ -1317,7 +1323,7 @@ void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, vo
  */
 
 
-void insertReadInList(llist_t *l, readInfo *read, const int isFragmentList) {
+void insertReadInList(llist_t *l, readInfo *read) {
     //llist_readInfo_print(l);
     llist_append(l, read);
     //if (l->size == 0) {
@@ -1349,7 +1355,7 @@ void insertReadInList(llist_t *l, readInfo *read, const int isFragmentList) {
  * @return read which is representing the pair
  */
 
-readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList, int case_insert) {
+readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList) {
     //md_log_trace("read1=%s, read2=%s, read1->unclippedCoordPos=%zu, read1->coordMatePos=%zu, read2->unclippedCoordPos=%zu, read2->coordMatePos=%zu, read1->orientation=%d, read2->orientation=%d\n", read1->Qname, read2->Qname, read1->unclippedCoordPos, read1->coordMatePos, read2->unclippedCoordPos, read2->coordMatePos, read1->orientation, read2->orientation);
 
     assert(read1->pair_num == 1 || read1->pair_num == 2); 
@@ -1375,13 +1381,13 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList,
 
    if ( read2->unclippedCoordPos >= read1->unclippedCoordPos ){
         //for discordant cases
-        insertReadInList(readEndsList, read1, 0);
+        insertReadInList(readEndsList, read1);
         return read2;
     } 
 
     else {
 
-        insertReadInList(readEndsList, read2, 0);
+        insertReadInList(readEndsList, read2);
         orientation first = getOrientation(read2, 0);
         orientation second = getOrientation(read1, 0);
 
@@ -1441,15 +1447,14 @@ int parseLibraries(char *bufferReads,
                     size_t readIndex, 
                     chrInfo *chr, 
                     lbInfo *lb, 
-                    MPI_Comm comm,
-                    int discordant_case) {
+                    MPI_Comm comm) {
 
     int rank, num_proc;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &num_proc);
 
     char *q = bufferReads;
-    int readCounter = readIndex, percentage = 1, increment = 10;
+    size_t readCounter = readIndex, percentage = 1, increment = 10;
     float progression = 0;
     readInfo *read = NULL;
 
@@ -1476,7 +1481,7 @@ int parseLibraries(char *bufferReads,
         char *tok;
 
         // parse read
-        getLine(&q, bufferReads, &tok);
+        getLine(&q, &tok);
         read = readParsing(tok, intervalByProc, readCounter, chr, lb, comm);
         
 
@@ -1499,7 +1504,7 @@ int parseLibraries(char *bufferReads,
             else
                 read->pair_num = 2;
 
-            insertReadInList(fragList, read, 1);
+            insertReadInList(fragList, read);
 
             if (readPaired && !mateUnmapped) {
                 k = kh_put_read(hash, read->Qname, &ret);
@@ -1530,7 +1535,7 @@ int parseLibraries(char *bufferReads,
                     /* Retrieve the read seen before */
                     readInfo *end = kh_val(hash, k);
 
-                    buildReadEnds(end, read, readEndsList, 0);
+                    buildReadEnds(end, read, readEndsList );
 
                     readEndscall++;
                 }
@@ -1663,11 +1668,11 @@ char *writeBuff(char **samTokenLines, readInfo **readArr, size_t readNum) {
     size_t bufferSize = 1;
     char *newBuff = NULL, *p = NULL;
     size_t splitLineSize = (readNum / SPLIT_FACTOR) + 1;
-    size_t splitNumber = 0;
+    size_t i, j, splitNumber = 0;
     int percentage = 1, increment = 10;
     float progression = 0;
 
-    for (int i = 0; i < readNum; i++) {
+    for ( i = 0; i < readNum; i++) {
         progression = 100 * ((float)i / readNum);
         size_t curMaxLine = splitLineSize * splitNumber;
 
@@ -1676,7 +1681,7 @@ char *writeBuff(char **samTokenLines, readInfo **readArr, size_t readNum) {
             splitNumber++;
             size_t curSizeOfNewBuff = newBuff ? strlen(newBuff) : 0;
 
-            for (int j = i; j < curMaxLine ; j++) {
+            for (j = i; j < curMaxLine ; j++) {
                 bufferSize += strlen(samTokenLines[j]) + 4;
             }
 
@@ -1734,7 +1739,7 @@ int getPosFromLine(char *samLine) {
 Interval getIntervalFromBuffer(char *bufferReads, size_t readNum) {
     Interval interval = {.firstCoord = 0, .lastCoord  = 0};
     char *firstLine, *lastLine, *offset = bufferReads;
-    getLine(&offset, bufferReads, &firstLine);
+    getLine(&offset, &firstLine);
     interval.firstCoord = getPosFromLine(firstLine);
     free(firstLine);
 
@@ -1746,7 +1751,7 @@ Interval getIntervalFromBuffer(char *bufferReads, size_t readNum) {
         }
 
         offset++;
-        getLine(&offset, bufferReads, &lastLine);
+        getLine(&offset, &lastLine);
         interval.lastCoord = getPosFromLine(lastLine);
         free(lastLine);
 
@@ -1770,8 +1775,8 @@ Interval getIntervalFromBuffer(char *bufferReads, size_t readNum) {
 
 int countExternalMateInArray(readInfo **readArr, size_t readNum, unsigned int checkWithBruck) {
     int counter = 0;
-
-    for (int i = 0; i < readNum; i++) {
+    size_t i;
+    for (i = 0; i < readNum; i++) {
         if (readArr[i] && readArr[i]->check_with_bruck == checkWithBruck) {
             counter++;
         }
@@ -1797,11 +1802,11 @@ int fillReadAndFictitiousMate(readInfo **readArr, readInfo ***readArrWithExterna
 
     //fprintf(stderr, " in fillReadAndFictitiousMate : externalMate = %zu \n", externalNum);
     
-    size_t totalRead = readNum + externalNum;
+    size_t i, totalRead = readNum + externalNum;
+    size_t  current = 0;
     *readArrWithExternal = malloc(totalRead * sizeof(readInfo *));
-    int current = 0;
 
-    for (int i = 0; i < readNum; i++) {
+    for ( i = 0; i < readNum; i++) {
         if (readArr[i] && readArr[i]->check_with_bruck == 1) {
 
             (*readArrWithExternal)[current++] = readArr[i];
@@ -1853,11 +1858,9 @@ inline unsigned int readFlag2MateFlag(unsigned int readFlag) {
 void exchangeExternFrag(llist_t *fragList, 
                         llist_t *readEndsList, 
                         hashTable *htbl, 
-                        Interval interval, 
-                        MPI_Comm comm,
-                        int discordant_case) {
+                        MPI_Comm comm) {
 
-    int rank, num_proc;
+    int rank;
     MPI_Comm_rank(comm, &rank);
 
     size_t numberOfExternalMate = 0;
@@ -1944,11 +1947,9 @@ void exchangeExternFrag(llist_t *fragList,
 		    
 		              if (matesByProc[i]->fingerprint == fragMateFingerprint) {
 
-                        readInfo *insertedRead = NULL;
+                        buildReadEnds(matesByProc[i], node->read, readEndsList );    
 
-                        buildReadEnds(matesByProc[i], node->read, readEndsList, 1);    
-
-                        insertReadInList(fragList, matesByProc[i], 1) ;
+                        insertReadInList(fragList, matesByProc[i]) ;
                         matesByProc[i]->Qname = strdup(node->read->Qname);
 
                         assert ((node->read->pair_num == 1 ) || (node->read->pair_num ==2));
@@ -1959,13 +1960,9 @@ void exchangeExternFrag(llist_t *fragList,
 
                         mateCounter++;
                         break;
-
                     }
-
                 }
-
             }
-
         }
     }
 
@@ -2006,12 +2003,12 @@ void exchangeExternFrag(llist_t *fragList,
  * @return a read buffer with duplicate reads marked.
  */
 
-char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm comm, char *chrName) {
+char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm comm) {
 
     MPI_Comm previousComm = md_get_log_comm();
     md_set_log_comm(comm);
 
-    int rank, num_proc, discordant_case;
+    int rank, num_proc;
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &num_proc);
@@ -2054,8 +2051,7 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
                     readIndexOffset, 
                     &chr,  
                     &lb, 
-                    comm,
-                    discordant_case);
+                    comm);
 
     md_log_debug("End of parsing and clustering %f seconds\n", MPI_Wtime() - timeStamp);
 
@@ -2086,7 +2082,7 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
    
     md_log_debug("Start to exchange mates ...\n");
     timeStamp = MPI_Wtime();
-    exchangeExternFrag(fragList, readEndsList, htbl, interval, comm, discordant_case) ;
+    exchangeExternFrag(fragList, readEndsList, htbl, comm) ;
 
     /*
      * we update pairPhredScore in readEndsList

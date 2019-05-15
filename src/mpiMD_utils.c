@@ -50,7 +50,7 @@ inline int fastqToPhred (char ch) {
 
 
 void printRead(readInfo *read) {
-    //printf("Qname=%s, fingerprint=%llu, mateRank=%zu, matePos=%zu, coord=%zu, posInCluster=%zu, check_with_bruck=%u\n", read->Qname, read->fingerprint, read->mate_rank, read->coordMatePos, read->coordPos, read->pos_in_cluster, read->check_with_bruck);
+    printf("Qname=%s, fingerprint=%llu, mateRank=%zu, matePos=%zu, coord=%zu, check_with_bruck=%u\n", read->Qname, read->fingerprint, read->mate_rank, read->coordMatePos, read->coordPos, read->check_with_bruck);
 }
 
 
@@ -64,7 +64,8 @@ void printRead(readInfo *read) {
  *   @todo merge getLine and getTokenTab
  */
 
-int getLine(char **offset, char *text, char **tokenLine) {
+int getLine(char **offset, char **tokenLine) {
+
     //TODO:Do this without strlen(text)
     //if (*offset < text || *offset > text + strlen(text)) {
     //    *offset = NULL;
@@ -96,7 +97,7 @@ int getLine(char **offset, char *text, char **tokenLine) {
  *   @return -1 if failed, remains text size otherwise
  */
 
-int getTokenTab(char **offset, char *text, char **tokenTab) {
+int getTokenTab(char **offset, char **tokenTab) {
     //if (*offset < text || *offset > text + strlen(text)) {
     //    *offset = NULL;
     //    return -1;
@@ -159,7 +160,7 @@ inline char *strapp(char *dest, char *src ) {
         dest++;
     }
 
-    while (*dest++ = *src++);
+    while ((*dest++ = *src++));
 
     return --dest;
 }

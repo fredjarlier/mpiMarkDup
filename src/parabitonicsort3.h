@@ -53,7 +53,6 @@ void Par_bitonic_sort_incr3(
 		size_t local_list1[],
 		int local_list2[],
 		int local_list3[],
-		size_t index_list[],
 		int proc_set_size,
         int rank
         );
@@ -63,8 +62,7 @@ void Par_bitonic_sort_decr3(
 		size_t 	local_list1[],
 		int 	local_list2[],
 		int		local_list3[],
-		size_t 	index_list[],
-        int 	proc_set_size,
+		int 	proc_set_size,
         int 	rank
         );
 void Merge_split3(
@@ -73,10 +71,8 @@ void Merge_split3(
 		size_t local_list1[],
 		int	   local_list2[],
 		int	   local_list3[],
-		size_t local_index[],
 		int which_keys,
-		int partner,
-		int my_rank
+		int partner
 		);
 void Merge_list_low3(
 		size_t list_size,
@@ -84,7 +80,6 @@ void Merge_list_low3(
 		size_t  list_key1[],
 		int  	list_key2[],
 		int     list_key3[],
-		size_t  list_index[],
 		size_t 	list_tmp_key[],
 		size_t 	list_tmp_key1[],
 		int    	list_tmp_key2[],
@@ -96,7 +91,6 @@ void Merge_list_high3(
 		size_t  list_key1[],
 		int  	list_key2[],
 		int  	list_key3[],
-		size_t  list_index[],
 		size_t 	list_tmp_key[],
 		size_t 	list_tmp_key1[],
 		int		list_tmp_key2[],
@@ -105,14 +99,12 @@ void Merge_list_high3(
 int bitonic_qksort3(
 		void *data,
 		size_t size,
-		size_t esize,
 		size_t i,
 		size_t k,
 		int (*compare)(const void *key1, const void *key2)
 		);
 int bitonic_partition3(
 		void *data,
-		size_t esize,
 		size_t i,
 		size_t k,
 		int (*compare)(const void *key1, const void *key2)

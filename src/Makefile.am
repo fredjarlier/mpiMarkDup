@@ -18,5 +18,6 @@ mpiSortHDR = mpiSort_utils.h mergeSort.h parabitonicsort.h \
 	bgzf.c bgzf.h khash.h sort_any_dim.h \
 	compat.h
 
-AM_CFLAGS= -std=gnu99 
+AM_CFLAGS= -g -O2 -Wall -Wextra -Werror -std=gnu99 
+#AM_CFLAGS= -g -O2
 #AM_LDFLAGS=--coverage
