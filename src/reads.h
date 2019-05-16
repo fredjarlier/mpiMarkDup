@@ -71,9 +71,7 @@ typedef struct {
     size_t unclippedCoordPos;
     size_t coordPos;
     size_t coordMatePos;
-    size_t orientation;
-    
-    
+    orientation orientation;
 } mateInfo;
 
 //Coordinate Mate Info
