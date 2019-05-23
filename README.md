@@ -13,6 +13,10 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 23/05/2019 <br />
+
+1) Fix issues with openssl 1.0.2k-fips. <br />
+
 Release 1.0 from the 15/05/2019 <br />
 
 1) Cleaning up the code. <br />
@@ -56,7 +60,7 @@ requirements
 tested with 
 
 gcc > 4.8 (tested with 7.3) <br />
-openmpi (tested with 2.2.1, 3, 4.0) <br />
+openmpi (tested with 2.2.1, 3, 4.0, intel mpi 2019) <br />
 openssl (tested with :1.0.2k, 1.1.0g) <br />
 automake-1.15 <br />
 autoconf-2.69 <br />
@@ -95,6 +99,28 @@ options are: <br />
     3 is LOG_INFO (default) <br />
     4 is LOG_DEBUG  <br />
     5 is LOG_TRACE  <br />
+
+Issues
+------
+
+Problem may occur when reads are not uniformely distributed or when data is to small. <br />
+
+the message looks like
+
+rank    0 :: [19:16:14][ INFO  ] start to handle chromosome chr4 ...
+rank    0 :: [19:16:14][ DEBUG ] Elected rank = 0
+rank    0 :: [19:16:14][ DEBUG ] [MPISORT] we split the rank
+rank    0 :: [19:16:14][ DEBUG ] [MPISORT] Dimensions for bitonic = 2 
+rank    0 :: [19:16:14][ DEBUG ] [MPISORT] Split size             = 3 
+rank    0 :: [19:16:14][ INFO  ] [SORT_ANY_DIM] total_num_read = 8 
+[frederic:22275] *** An error occurred in MPI_Recv
+[frederic:22275] *** reported by process [969080833,0]
+[frederic:22275] *** on communicator MPI COMMUNICATOR 4 SPLIT FROM 0
+[frederic:22275] *** MPI_ERR_TRUNCATE: message truncated
+[frederic:22275] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+[frederic:22275] ***    and potentially your MPI job)
+
+Reduce the number of cpu when it happens. <br />
 
 How it works
 ------------

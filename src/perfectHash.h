@@ -73,9 +73,9 @@ int haveCollision(hashParam hp, int prime, size_t *arr, size_t size);
 void printPerfectHashTable(hashTable *htbl);
 
 // Conversion
-unsigned long long read2mateFP(readInfo* read) ;
-unsigned long long read2Fingerprint(readInfo *read);
-unsigned long long string2MD5(char *str);
+size_t read2mateFP(readInfo* read) ;
+size_t read2Fingerprint(readInfo *read);
+size_t string2MD5(const char *str);
 
 // Construction 
 void constructMainUnivHash(hashParam *hp, int *p, readInfo **arr, size_t size);

@@ -65,7 +65,7 @@ void md_set_log_level(enum mdLogLevel level) {
  * @return logger severity level
  */
 
-enum mdLogLevel md_get_log_level() {
+int md_get_log_level() {
     return md.verbose;
 }
 

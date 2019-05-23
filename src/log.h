@@ -58,7 +58,7 @@ void md_set_log_level(enum mdLogLevel level);
 void md_set_log_comm(MPI_Comm comm) ;
 
 /// Gets the selected log level.
-enum mdLogLevel md_get_log_level();
+int md_get_log_level();
 MPI_Comm md_get_log_comm() ;
 
 /// Selected log level.

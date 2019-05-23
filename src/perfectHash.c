@@ -161,7 +161,7 @@ static size_t getPrimeGT(size_t m) {
  *         scale, should modify it and all fingerprint occurrence.
  */
 
-unsigned long long string2MD5(char *str) {
+size_t string2MD5(const char *str) {
     unsigned char digest[MD5_DIGEST_LENGTH];
     MD5_CTX context;
     MD5_Init(&context);
@@ -183,25 +183,20 @@ unsigned long long string2MD5(char *str) {
  *   @return the associated fingerprint of @p read
  */
 
-unsigned long long read2Fingerprint(readInfo *read) {
+size_t read2Fingerprint(readInfo *read) {
     // QNAME have at most 255 char
-    char *buffer = calloc(300, sizeof(char));
+    char *buffer = calloc(300, sizeof(unsigned char));
+    const char *buffer2 = NULL;
     assert(strcpy(buffer, read->Qname));
-
-    // if (read->valueFlag == 0)
-    //         fprintf(stderr, "in READTOFINGERPRINT on  problem with read %s valueFlag is NULL \n", read->Qname);
-             
-    //int firstInPair = readBits(read->valueFlag, 6);
-    //int secondInPair = readBits(read->valueFlag, 7);
-    //assert(firstInPair || secondInPair);
-    //char numInPair = digit2char(firstInPair + 2*secondInPair);
-
+    buffer[strlen(read->Qname)] = 0; 
     assert ( (read->pair_num ==1) || (read->pair_num == 2));
     char numInPair = digit2char(read->pair_num);
     // string to hash is <QNAME><numberInPair>
     assert(numInPair);
     assert(strcat(buffer, &numInPair));
-    size_t fingerprint = string2MD5(buffer);
+    buffer[strlen(read->Qname) + 1] = 0;
+    buffer2 = buffer;
+    size_t fingerprint = string2MD5(buffer2);
     assert(fingerprint);
     free(buffer);
     return fingerprint;
@@ -595,7 +590,7 @@ readInfo *getReadFromQnameAndPairNum(hashTable *htbl, char *Qname, int PairNum) 
  *   @return @p read's mate fingerprint
  */
 
-unsigned long long read2mateFP(readInfo *read) {
+size_t read2mateFP(readInfo *read) {
 
 
     //unsigned int firstInPair  = readBits(read->valueFlag, 6);
@@ -629,7 +624,7 @@ unsigned long long read2mateFP(readInfo *read) {
 
 readInfo *getMateFromRead(hashTable *htbl, readInfo *read) {
     assert( (read->pair_num == 1) || (read->pair_num == 2));
-    unsigned long long mateFP = read2mateFP(read);
+    size_t mateFP = read2mateFP(read);
     return getReadFromFingerprint(htbl, mateFP);
 }
 
@@ -637,7 +632,8 @@ readInfo *getMateFromRead(hashTable *htbl, readInfo *read) {
  *   @date 2018 Apr 7
  *   @brief Create MPI derived type corresponding to hashParam
  *   @param[out] HPType the MPI derived type
- */
+ *   Comments we don't use this function due to problem
+ *   see ShareHPandConstructHtbl function 
 
 static void createHPType(MPI_Datatype *HPType) {
 
@@ -656,6 +652,7 @@ static void createHPType(MPI_Datatype *HPType) {
     MPI_Type_create_struct(3, blocks, displacements, types, HPType);
     MPI_Type_commit(HPType);
 }
+*/
 
 /**
  *   @date 2018 Feb 26
@@ -693,16 +690,25 @@ void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, size_t size, MPI_C
 
     /* transfert hash parameter */
     
-    MPI_Datatype hp_type;
-    createHPType(&hp_type);
 
-    MPI_Bcast(&hp, 1, hp_type, 0, comm);
+    // TODO: 
+    //we replace MPI_Bcast with DATATYPE because Intel compiler and Intel MPI 2019 
+    //complains 
+    // TODO: to test in future release with DATATYPE
+
+    MPI_Bcast(&(hp.a), 1, MPI_SIZE_T, 0, comm);
+    MPI_Bcast(&(hp.b), 1, MPI_SIZE_T, 0, comm);
+    MPI_Bcast(&(hp.m), 1, MPI_SIZE_T, 0, comm);
+
+    //MPI_Datatype hp_type;
+    //createHPType(&hp_type);
+    //MPI_Bcast(&hp, 1, hp_type, 0, comm);
 
     if (rank != 0) {
         hashTableInitWithHp(htbl, hp, arr, size);
     }
 
-    MPI_Type_free(&hp_type);
+    //MPI_Type_free(&hp_type);
 }
 
 
