@@ -78,4 +78,5 @@ int markMateDuplicateFlag(hashTable *htbl, readInfo *read, int d);
 char* writeBuff(char **samTokenLines, readInfo **readArr, size_t readNum);
 void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
 CMInfo read2CM(readInfo *read) ;
+size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, size_t numberOfReadsToSend, MPI_Comm comm);
 #endif

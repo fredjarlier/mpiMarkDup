@@ -13,6 +13,12 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 13/06/2019 <br />
+
+1) Replace All2all with a Bruck when exchange external frags <br />
+
+2) Change some types in readInfo and mateInfo structures <br />
+
 Release 1.0 from the 23/05/2019 <br />
 
 1) Fix issues with openssl 1.0.2k-fips. <br />

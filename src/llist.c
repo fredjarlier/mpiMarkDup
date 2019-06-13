@@ -67,8 +67,11 @@ int compareRead(readInfo *read1, readInfo *read2, const int isFragment) {
 
     //md_log_trace("%s <-> %s, %zu <-> %zu, after unclippedCoordPos, compareDifference=%d\n", read1->Qname, read2->Qname, read1->unclippedCoordPos, read2->unclippedCoordPos, compareDifference);
 
-    orientation read1orientation;
-    orientation read2orientation;
+    //orientation read1orientation;
+    //orientation read2orientation;
+
+    unsigned int read1orientation;
+    unsigned int read2orientation;
 
     if (isFragment) {
         // get reads fragment orientation, i.e. reverse (R) or forward (F)

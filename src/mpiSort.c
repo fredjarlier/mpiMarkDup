@@ -504,7 +504,7 @@ int main (int argc, char *argv[]) {
 
     MPI_Allreduce(&nb_reads_total, &nb_reads_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD); //Sums all of the total reads for each rank into the variable nb_reads_global
     md_log_rank_debug(0, "total read to sort  = %zu \n", nb_reads_global);
-    md_log_rank_debug(0, "number of chromosome  = %d \n", nbchr);
+    md_log_rank_debug(0, "number of chromosome  = %d + discordants + unmapped \n", nbchr - 2);
     /*
      *  We write the mapped reads in a file named chrX.bam
      *  We loop by chromosoms.

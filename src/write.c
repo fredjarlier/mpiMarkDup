@@ -141,6 +141,181 @@ void bruckWrite3(
     bruck_size(rank, num_proc, local_readNum, number_of_reads_by_procs, *read_size, new_rank, new_reads_size);
 }
 
+void bruckMarkdup(
+   
+    int rank,
+    int num_proc,
+    size_t local_readNum,
+    size_t *number_of_reads_by_procs,
+    int *new_rank,
+    int *snd_mate_Lb,
+    int ***rcv_mate_Lb,
+    int *snd_mate_Materank,
+    int ***rcv_mate_Materank,
+    int *snd_mate_phredscore,    
+    int ***rcv_mate_phredscore,
+    size_t *snd_mate_indexAfterSort,
+    size_t ***rcv_mate_indexAfterSort,
+    size_t *snd_mate_unclippedCoordPos,
+    size_t ***rcv_mate_unclippedCoordPos,
+    size_t *snd_mate_coordPos,
+    size_t ***rcv_mate_coordPos,
+    size_t *snd_mate_coordMatePos,
+    size_t ***rcv_mate_coordMatePos,
+    size_t *snd_mate_fingerprint,
+    size_t ***rcv_mate_fingerprint,
+    unsigned int *snd_mate_valueFlag,
+    unsigned int ***rcv_mate_valueFlag,
+    unsigned int *snd_mate_pair_num,
+    unsigned int ***rcv_mate_pair_num,
+    unsigned int *snd_mate_orientation,
+    unsigned int ***rcv_mate_orientation
+
+) {
+
+    //bruck for size_t type
+    bruck_size(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_Lb, new_rank, snd_mate_Lb);
+    bruck_size(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_Materank, new_rank, snd_mate_Materank);
+    bruck_size(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_phredscore, new_rank, snd_mate_phredscore);
+    bruck_offsets(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_indexAfterSort, new_rank, snd_mate_indexAfterSort);
+    bruck_offsets(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_unclippedCoordPos, new_rank, snd_mate_unclippedCoordPos);
+    bruck_offsets(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordPos, new_rank, snd_mate_coordPos);
+    bruck_offsets(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordMatePos, new_rank, snd_mate_coordMatePos);
+    bruck_offsets(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_fingerprint, new_rank, snd_mate_fingerprint);
+
+    
+
+    //bruck for int type
+    
+    bruck_unsigned_int(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_pair_num, new_rank, snd_mate_pair_num);
+    bruck_unsigned_int(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_valueFlag, new_rank, snd_mate_valueFlag);
+    bruck_unsigned_int(rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_orientation, new_rank, snd_mate_orientation);
+    
+    }
+
+void bruck_unsigned_int(int rank, int num_proc, size_t local_readNum, 
+                            size_t *number_of_reads_by_procs, unsigned int **data_size, 
+                                int *new_rank, unsigned int *new_size) {
+    
+    
+    MPI_Comm comm = COMM_WORLD;
+
+    int k, m, j, srank, rrank;
+    int packsize;
+    int *recv_index = NULL;
+    MPI_Datatype dt_send;
+    size_t m2, total, send_total, *recv_size_by_proc = NULL, *send_size_by_proc = NULL;
+    
+    //test if we have something to do
+    //if (local_readNum == 0) return;
+
+    //fprintf(stderr, "in bruck unsigned int : rank = %d :: numproc = %d :: local_read_num = %zu \n", rank, num_proc, local_readNum );
+
+
+    for (m = 0; m < num_proc; m++) {
+        number_of_reads_by_procs[m] = 0;
+    }
+
+    for (m2 = 0; m2 < local_readNum; m2++) {
+        number_of_reads_by_procs[new_rank[m2]]++;
+    }
+
+    unsigned int **data_size2 = malloc(sizeof(unsigned int *)*num_proc);
+    size_t *read_by_proc = calloc(num_proc, sizeof(size_t));
+
+    //we initialize data_offsets
+    for (m = 0; m < num_proc; m++) {
+        data_size[m] = NULL;
+        data_size2[m] = calloc( number_of_reads_by_procs[m], sizeof(unsigned int));
+    }
+    
+    //we give values data_offsets
+    for (m2 = 0; m2 < local_readNum; m2++) {
+
+        // Phase one of bruck shift of the (rank+i)%size and (rank-i+size)%size
+        data_size2[new_rank[m2]][read_by_proc[new_rank[m2]]] = new_size[m2];
+        read_by_proc[new_rank[m2]]++;
+    }
+
+    for (j = 0; j < num_proc; j++) {
+        data_size[(rank + j) % num_proc] = data_size2[(rank - j + num_proc) % num_proc];
+        number_of_reads_by_procs[(rank + j) % num_proc] =  read_by_proc[(rank - j + num_proc) % num_proc];
+    }
+
+    free(read_by_proc);
+
+    for (k = 1; k < num_proc; k <<= 1) {
+        srank = (rank - k + num_proc) % num_proc;   //Rank to send to
+        rrank = (rank + k) % num_proc;              //Rank to recv from
+
+
+        int count = badCount(k, num_proc);
+        recv_index = malloc(sizeof(int) * count);
+
+        count = create_send_datatype_for_unsigned_int(rank, num_proc, number_of_reads_by_procs,
+                                              data_size, k, &dt_send, &recv_index);
+
+        MPI_Type_commit(&dt_send);
+
+        send_size_by_proc = malloc(count * sizeof(size_t));
+        recv_size_by_proc = malloc(count * sizeof(size_t));
+
+        send_total = get_send_size(rank, num_proc, number_of_reads_by_procs,
+                                   &send_size_by_proc, k);
+
+        MPI_Pack_size(1, dt_send, comm, &packsize);
+        assert(packsize == (int)(4 * send_total));
+        
+        MPI_Sendrecv(send_size_by_proc, count, MPI_LONG_LONG_INT, srank, 0,
+                     recv_size_by_proc, count, MPI_LONG_LONG_INT,
+                     rrank, 0, comm, MPI_STATUS_IGNORE);
+
+        total = 0;
+
+        for (m = 0; m < count; m++) {
+            total += recv_size_by_proc[m];
+        }
+
+        int *interbuff_offset = malloc(total * sizeof(int));
+
+        MPI_Sendrecv(MPI_BOTTOM, 1, dt_send, srank, 0,
+                     interbuff_offset, total, MPI_UNSIGNED, rrank, 0, comm, MPI_STATUS_IGNORE);
+
+        for ( m = 0; m < count; m++) {
+            // we free and allocate data_offsets
+            // according to the recieve size
+            if (data_size[recv_index[m]]) {
+
+                free(data_size[recv_index[m]]);
+                data_size[recv_index[m]] = NULL;
+                data_size[recv_index[m]] = malloc(sizeof(int) * (recv_size_by_proc[m]));
+            }
+        }
+
+        int *tmp_var = interbuff_offset;
+
+        for (m = 0; m < count; m++) {
+
+            memcpy(data_size[recv_index[m]], tmp_var, recv_size_by_proc[m] * sizeof(unsigned int));
+            tmp_var += recv_size_by_proc[m];
+            number_of_reads_by_procs[recv_index[m]] = recv_size_by_proc[m];
+
+        }
+
+        MPI_Type_free(&dt_send);
+
+        count = 0;
+        free(interbuff_offset);
+        free(recv_index);
+        free(recv_size_by_proc);
+        free(send_size_by_proc);
+    }
+
+    free(data_size2);
+}
+
+
+
 void bruck_reads(int rank, int num_proc, size_t *buffs_by_procs, char **data2) {
     MPI_Comm comm = COMM_WORLD;
 
@@ -231,7 +406,9 @@ void bruck_reads(int rank, int num_proc, size_t *buffs_by_procs, char **data2) {
     free(send_size_by_proc);
 }
 
-void bruck_offsets(int rank, int num_proc, int local_readNum, size_t *number_of_reads_by_procs, size_t **data_offsets, int *new_rank, size_t *new_offset) {
+void bruck_offsets(int rank, int num_proc, int local_readNum, size_t *number_of_reads_by_procs, 
+            size_t **data_offsets, int *new_rank, size_t *new_offset) {
+    
     MPI_Comm comm = COMM_WORLD;
 
     int k, m, j2, srank, rrank;
@@ -251,7 +428,8 @@ void bruck_offsets(int rank, int num_proc, int local_readNum, size_t *number_of_
         number_of_reads_by_procs[new_rank[m]]++;
     }
 
-    size_t **data_offsets2 = malloc(sizeof(size_t *)*num_proc);
+    size_t **data_offsets2 = malloc(sizeof(size_t *) * num_proc);
+    
 
     //we initialize data_offsets
     for (m = 0; m < num_proc; m++) {
@@ -283,6 +461,7 @@ void bruck_offsets(int rank, int num_proc, int local_readNum, size_t *number_of_
         recv_index = malloc(sizeof(int) * count);
         count = create_send_datatype_for_offsets(rank, num_proc, number_of_reads_by_procs,
                 data_offsets, k, &dt_send, &recv_index);
+
 
         MPI_Type_commit(&dt_send);
 

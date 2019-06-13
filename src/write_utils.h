@@ -56,7 +56,8 @@ int create_send_datatype_for_reads(int rank, int size, size_t *buffs, char** dat
 
 size_t get_send_size(int rank, int size, size_t* buffs, size_t** send_size, int k);
 
-
+int create_send_datatype_for_unsigned_int(int rank, int size, size_t *num_reads_by_procs, unsigned int **dest_size,
+    int k, MPI_Datatype* dt, int** recv_index);
 
 
 void send_size_t_all_to_master(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,

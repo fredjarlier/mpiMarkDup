@@ -40,6 +40,7 @@
 #include <math.h>
 
 #include "khash.h"
+#include "write.h"
 #define SPLIT_FACTOR 4
 
 /**
@@ -88,8 +89,8 @@ readInfo *buildReadEndsDiscordant(readInfo *read1, readInfo *read2, llist_t *rea
 
     // read and mate in same position, force to FR
     if (read1->unclippedCoordPos == read2->unclippedCoordPos) {
-        read2->orientation = FR;
-        read1->orientation = FR;
+        read2->orientation = 3;//FR;
+        read1->orientation = 3;//FR;
 
     }
 
@@ -104,27 +105,30 @@ readInfo *buildReadEndsDiscordant(readInfo *read1, readInfo *read2, llist_t *rea
     } else {
 
         insertReadInList(readEndsList, read2);
-        orientation first = getOrientation(read2, 0);
-        orientation second = getOrientation(read1, 0);
+        //orientation first = getOrientation(read2, 0);
+        //orientation second = getOrientation(read1, 0);
 
-        if (first == R) {
-            if (second == R) {
-                read2->orientation = RR;
-                read1->orientation = RR;
+        unsigned int first = getOrientation(read2, 0);
+        unsigned int second = getOrientation(read1, 0);
+
+        if (first == 1 /*R*/) {
+            if (second == 1 /*R*/) {
+                read2->orientation = 4;//RR;
+                read1->orientation = 4;//RR;
 
             } else {
-                read2->orientation = RF;
-                read1->orientation = RF;
+                read2->orientation = 5;//RF;
+                read1->orientation = 5;//RF;
             }
 
         } else {
-            if (second == R) {
-                read2->orientation = FR;
-                read1->orientation = FR;
+            if (second == 1 /*R*/) {
+                read2->orientation = 3;//FR;
+                read1->orientation = 3;//FR;
 
             } else {
-                read2->orientation = FF;
-                read1->orientation = FF;
+                read2->orientation = 2;//FF;
+                read1->orientation = 2;//FF;
             }
         }
 
@@ -311,9 +315,10 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
 
     /* Exchange mates and fill them to a readInfo array */
     readInfo **matesByProc;
-    int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
+    //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
+    size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
 
-    md_log_rank_debug(rank, "[mpiMD][exchangeExternFragDiscordant] Received %d mates, fragList size = %d\n", totalrecv, fragList->size);
+    md_log_rank_debug(rank, "[mpiMD][exchangeExternFragDiscordant] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
 
     //test if we have nothing to do we return
     if (totalrecv == 0) return; 
@@ -335,7 +340,7 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
 
 
     int mateCounter = 0;
-    for (int i = 0; i < totalrecv; i++) {
+    for (size_t i = 0; i < totalrecv; i++) {
         readInfo *mate = getReadFromFingerprint(htbl, matesByProc[i]->fingerprint);
         assert( (mate->pair_num == 1) || (mate->pair_num == 2));
         /* Only external mate of the current buffer has a slot in hash table.

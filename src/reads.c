@@ -173,13 +173,13 @@ readInfo *cloneRead(readInfo *read) {
  *       Returns a single byte that encodes the orientation of the two reads in a pair.
  */
 
-orientation getOrientation (readInfo *read, const int isPaired) {
+unsigned int getOrientation (readInfo *read, const int isPaired) {
 
     unsigned int readReverseStrand = readBits((unsigned int)read->valueFlag, 4);
 
     if (!isPaired) {
-        return readReverseStrand ? R : F;
-
+        //return readReverseStrand ? R : F;
+        return readReverseStrand ? 1 : 0;
     } else {
         unsigned int mateReverseStrand = readBits((unsigned int)read->valueFlag, 5);
 
@@ -188,18 +188,22 @@ orientation getOrientation (readInfo *read, const int isPaired) {
 
         if (read1NegativeStrand) {
             if (read2NegativeStrand) {
-                return RR;
+                //return RR;
+                return 4;
 
             } else {
-                return RF;
+                //return RF;
+                return 5;
             }
 
         } else {
             if (read2NegativeStrand) {
-                return FR;
+                //return FR;
+                return 3;
 
             } else {
-                return FF;
+                //return FF;
+                return 2;
             }
         }
     }

@@ -34,10 +34,12 @@
 #define _GNU_SOURCE
 #include "mark_duplicates.h"
 #include "createLBList.h"
+#include <malloc.h>
 #include <string.h>
 #include <math.h>
 
 #include "khash.h"
+#include "write.h"
 #define SPLIT_FACTOR 4
 
 /**
@@ -565,7 +567,7 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
                  * prevent overflow.
                  */
 
-                read->phred_score = min(read->phred_score, (size_t) (0x7FFF / 2));
+                read->phred_score = min(read->phred_score, (int) (0x7FFF / 2));
                 read->pairPhredScore = read->phred_score;
                 free(tokenCar);
                 break;
@@ -753,7 +755,7 @@ void markDuplicatePairs(llist_t *cluster, hashTable *htbl, int *totalDuplica, in
 
 
 
-    size_t bestScore = 0;
+    int bestScore = 0;
     readInfo *best = NULL;
 
     //we search the best node 
@@ -849,7 +851,7 @@ void markDuplicateFragments(llist_t *cluster, int *totalDuplica, const int conta
 
     } else {
 
-        size_t bestScore = 0;
+        int bestScore = 0;
         readInfo *best = NULL;
 
         for (lnode_t *node = cluster->head ; node != cluster->nil; node = node->next) {
@@ -1068,6 +1070,196 @@ int computeCountAndDispl(int *scounts, int **sdispls, int **rcounts, int **rdisp
     return totalReceived;
 }
 
+
+/**
+ * @date 2019 June 11
+ * @brief Communication part of mark duplicate, exchange mates with Bruck algorithm.
+ * @param[out] matesByProc array of reads gather from others process
+ * @param[in] mates array of mates to send sorted by rank
+ * @param[in] numberOfReadsToSend number of reads to send
+ * @param[in] comm markDuplicate communicator
+ * @return amount of reads received
+ * @todo benchmark MPI_Alltoallv/zeroCopyBruckv/Bruckv/OpenMPI bruck
+ */
+
+size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, size_t numberOfReadsToSend, MPI_Comm comm){
+
+    int rank, num_proc, n;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &num_proc);
+    
+    size_t m;
+    
+    int *mate_dest_rank                 = malloc( numberOfReadsToSend * sizeof(int));
+    int *snd_mate_Lb                    = malloc(sizeof(int) * numberOfReadsToSend);
+    int *snd_mate_Materank              = malloc(sizeof(int) * numberOfReadsToSend);
+    int *snd_mate_phredscore            = malloc(sizeof(int) * numberOfReadsToSend);
+
+    size_t *number_of_mates_by_procs    = malloc( num_proc * sizeof(size_t));
+    size_t *snd_mate_indexAfterSort     = malloc(sizeof(size_t) * numberOfReadsToSend);
+    size_t *snd_mate_unclippedCoordPos  = malloc(sizeof(size_t) * numberOfReadsToSend);
+    size_t *snd_mate_coordPos           = malloc(sizeof(size_t) * numberOfReadsToSend);
+    size_t *snd_mate_coordMatePos       = malloc(sizeof(size_t) * numberOfReadsToSend);
+    size_t *snd_mate_fingerprint        = malloc(sizeof(size_t) * numberOfReadsToSend);
+    
+    unsigned int *snd_mate_valueFlag    = malloc(sizeof(unsigned int) * numberOfReadsToSend);
+    unsigned int *snd_mate_pair_num     = malloc(sizeof(unsigned int) * numberOfReadsToSend);
+    unsigned int *snd_mate_orientation  = malloc(sizeof(unsigned int) * numberOfReadsToSend);
+
+    for (m = 0; m < numberOfReadsToSend; m++){
+
+        number_of_mates_by_procs[mates[m].mateRank]++;
+        
+        mate_dest_rank[m]               = mates[m].mateRank;
+        snd_mate_Lb[m]                  = mates[m].readLb;
+        snd_mate_Materank[m]            = mates[m].mateRank;
+        snd_mate_phredscore[m]          = mates[m].phredScore;
+        snd_mate_indexAfterSort[m]      = mates[m].indexAfterSort;
+        snd_mate_unclippedCoordPos[m]   = mates[m].unclippedCoordPos;
+        snd_mate_coordPos[m]            = mates[m].coordPos;
+        snd_mate_coordMatePos[m]        = mates[m].coordMatePos;
+        snd_mate_fingerprint[m]         = mates[m].fingerprint;
+        snd_mate_valueFlag[m]           = mates[m].valueFlag;
+        snd_mate_pair_num[m]            = mates[m].pair_num;
+        snd_mate_orientation[m]         = mates[m].orientation;
+    }
+
+    int **rcv_mate_Lb                       = malloc(sizeof(int *) * num_proc);
+    int **rcv_mate_Materank                 = malloc(sizeof(int *) * num_proc);
+    int **rcv_mate_phredscore               = malloc(sizeof(int *) * num_proc);
+    size_t **rcv_mate_indexAfterSort        = malloc(sizeof(size_t *) * num_proc);
+    size_t **rcv_mate_unclippedCoordPos     = malloc(sizeof(size_t *) * num_proc);
+    size_t **rcv_mate_coordPos              = malloc(sizeof(size_t *) * num_proc);
+    size_t **rcv_mate_coordMatePos          = malloc(sizeof(size_t *) * num_proc);
+    size_t **rcv_mate_fingerprint           = malloc(sizeof(size_t *) * num_proc);
+
+    unsigned int **rcv_mate_valueFlag       = malloc(sizeof(unsigned int *) * num_proc);
+    unsigned int **rcv_mate_pair_num        = malloc(sizeof(unsigned int *) * num_proc);
+    unsigned int **rcv_mate_orientation     = malloc(sizeof(unsigned int *) * num_proc);
+
+    size_t totalrecv = numberOfReadsToSend;
+
+    //now we call bruck
+    bruckMarkdup(
+                    rank,
+                    num_proc,
+                    numberOfReadsToSend,
+                    number_of_mates_by_procs,
+                    mate_dest_rank,
+                    snd_mate_Lb,
+                    &rcv_mate_Lb,
+                    snd_mate_Materank,
+                    &rcv_mate_Materank,
+                    snd_mate_phredscore,    
+                    &rcv_mate_phredscore,
+                    snd_mate_indexAfterSort,
+                    &rcv_mate_indexAfterSort,
+                    snd_mate_unclippedCoordPos,
+                    &rcv_mate_unclippedCoordPos,
+                    snd_mate_coordPos,
+                    &rcv_mate_coordPos,
+                    snd_mate_coordMatePos,
+                    &rcv_mate_coordMatePos,
+                    snd_mate_fingerprint,
+                    &rcv_mate_fingerprint,
+                    snd_mate_valueFlag,
+                    &rcv_mate_valueFlag,
+                    snd_mate_pair_num,
+                    &rcv_mate_pair_num,
+                    snd_mate_orientation,
+                    &rcv_mate_orientation
+    ); 
+    
+    *matesByProc = calloc(totalrecv, sizeof(readInfo *));
+
+    // Fill readInfo mates array by received mateInfo mates array
+
+    size_t k = 0;
+    size_t index = 0;
+
+    for (n = 0; n < num_proc; n++) {
+
+        //if ( number_of_mates_by_procs[n] == 0) continue;    
+
+        for (k = 0; k < number_of_mates_by_procs[n]; k++){
+
+            readInfo *mate = calloc(1, sizeof(readInfo));
+
+            /**
+             * Set mateInfo's string fields to NULL.
+             * This permit us to free mates with freeRead later.
+             */
+
+            mate->Qname = NULL;
+            mate->cigar = NULL;
+
+            // Conversion of others fields
+            mate->fingerprint           = rcv_mate_fingerprint[n][k];
+            mate->readLb                = rcv_mate_Lb[n][k];
+            mate->mate_rank             = rcv_mate_Materank[n][k];
+            mate->phred_score           = rcv_mate_phredscore[n][k];
+            mate->indexAfterSort        = rcv_mate_indexAfterSort[n][k];
+            mate->unclippedCoordPos     = rcv_mate_unclippedCoordPos[n][k];
+            mate->coordPos              = rcv_mate_coordPos[n][k];
+            mate->coordMatePos          = rcv_mate_coordMatePos[n][k];
+            mate->orientation           = rcv_mate_orientation[n][k];
+            mate->valueFlag             = rcv_mate_valueFlag[n][k];
+            mate->pair_num              = rcv_mate_pair_num[n][k];
+            // These mates are external and not checked.
+            mate->external = 1;
+            mate->checked = 0;
+
+            (*matesByProc)[index] = mate;
+            index++;
+        }
+    }
+
+    
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_Lb[n])                 free(rcv_mate_Lb[n]); 
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_Materank[n])           free(rcv_mate_Materank[n]);    
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_phredscore[n])         free(rcv_mate_phredscore[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_indexAfterSort[n])     free(rcv_mate_indexAfterSort[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_unclippedCoordPos[n])  free(rcv_mate_unclippedCoordPos[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_coordPos[n])           free(rcv_mate_coordPos[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_coordMatePos[n])       free(rcv_mate_coordMatePos[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_fingerprint[n])        free(rcv_mate_fingerprint[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_valueFlag[n])          free(rcv_mate_valueFlag[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_pair_num[n])           free(rcv_mate_pair_num[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_orientation[n])        free(rcv_mate_orientation[n]);
+    
+
+    if (rcv_mate_Lb)                free(rcv_mate_Lb);
+    if (rcv_mate_Materank)          free(rcv_mate_Materank);
+    if (rcv_mate_phredscore)        free(rcv_mate_phredscore);
+    if (rcv_mate_indexAfterSort)    free(rcv_mate_indexAfterSort);
+    if (rcv_mate_unclippedCoordPos) free(rcv_mate_unclippedCoordPos);
+    if (rcv_mate_coordPos)          free(rcv_mate_coordPos);
+    if (rcv_mate_coordMatePos)      free(rcv_mate_coordMatePos);
+    if (rcv_mate_fingerprint)       free(rcv_mate_fingerprint);
+    if (rcv_mate_valueFlag)         free(rcv_mate_valueFlag);
+    if (rcv_mate_pair_num)          free(rcv_mate_pair_num);
+    if (rcv_mate_orientation)       free(rcv_mate_orientation);
+    
+
+    free(snd_mate_Lb);
+    free(snd_mate_Materank);
+    free(snd_mate_phredscore);
+    free(snd_mate_indexAfterSort);
+    free(snd_mate_unclippedCoordPos);
+    free(snd_mate_coordPos);
+    free(snd_mate_coordMatePos);
+    free(snd_mate_fingerprint);
+    free(snd_mate_valueFlag);
+    free(snd_mate_pair_num);
+    free(snd_mate_orientation);    
+    free(number_of_mates_by_procs);
+
+    
+    return totalrecv;
+}
+
+
+
 /**
  * @date 2018 Feb 26
  * @brief Communication part of mark duplicate, exchange mates.
@@ -1077,7 +1269,7 @@ int computeCountAndDispl(int *scounts, int **sdispls, int **rcounts, int **rdisp
  * @param[in] comm markDuplicate communicator
  * @return amount of reads received
  * @todo benchmark MPI_Alltoallv/zeroCopyBruckv/Bruckv/OpenMPI bruck
- */
+ */ 
 
 int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberOfReadsToSend, MPI_Comm comm) {
 
@@ -1095,7 +1287,6 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
 
     int totalrecv = computeCountAndDispl(scounts, &sdispls, &rcounts, &rdispls, comm);
 
-    /* Trace reads to send */
     for ( m = 0; m < numberOfReadsToSend; m++) {
 
         //assert (mates[i].pair_num == 1 || mates[i].pair_num == 2);
@@ -1114,8 +1305,6 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
         mates[m].pair_num);
     }
 
-    /* End of trace */
-
     mateInfo *matesRecv = calloc(totalrecv, sizeof(mateInfo));
 
     // Create MPI type corresponding to mateInfo
@@ -1127,8 +1316,6 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
                   matesRecv, rcounts, rdispls, mate_type, comm);
     MPI_Type_free(&mate_type);
 
-
-    /* Trace reads received */
     for (int i = 0; i < num_proc; i++) {
         for (int j = 0; j < rcounts[i] ; j++) {
             int index = rdispls[i] + j;
@@ -1149,8 +1336,6 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
         }
     }
 
-    /* End of trace */
-
     *matesByProc = calloc(totalrecv, sizeof(readInfo *));
 
     // Fill readInfo mates array by received mateInfo mates array
@@ -1160,11 +1345,6 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
             int index = rdispls[i] + j;
 
             readInfo *mate = calloc(1, sizeof(readInfo));
-
-            /**
-             * Set mateInfo's string fields to NULL.
-             * This permit us to free mates with freeRead later.
-             */
 
             mate->Qname = NULL;
             mate->cigar = NULL;
@@ -1198,6 +1378,7 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
     return totalrecv;
 }
 
+
 /**
  *   @date 2018 Feb 28
  *   @brief All processes send data to all processes, zero-copy version of MPI_Alltoall using Bruck's algorithm.
@@ -1210,7 +1391,7 @@ int exchangeAndFillMate(readInfo ***matesByProc, mateInfo *mates, size_t numberO
  *   @param[in] comm        Communicator over which data is to be exchanged (handle).
  *   @note see J.L. Träff et al.[2014] paper, Implementing a Classic: Zero-copy All-to-all Communication with MPI Datatypes
  *   @bug there is an invalid write/read when we use, for instance, 7 processors
- 
+  
 
 void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, 
     void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm) {
@@ -1375,8 +1556,8 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList)
 
     // read and mate in same position, force to FR
     if (read1->unclippedCoordPos == read2->unclippedCoordPos) {
-        read2->orientation = FR;
-        read1->orientation = FR;
+        read2->orientation = 2;//FR;
+        read1->orientation = 3;//FR;
     }
 
    if ( read2->unclippedCoordPos >= read1->unclippedCoordPos ){
@@ -1388,27 +1569,30 @@ readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList)
     else {
 
         insertReadInList(readEndsList, read2);
-        orientation first = getOrientation(read2, 0);
-        orientation second = getOrientation(read1, 0);
+        //orientation first = getOrientation(read2, 0);
+        //orientation second = getOrientation(read1, 0);
 
-        if (first == R) {
-            if (second == R) {
-                read2->orientation = RR;
-                read1->orientation = RR;
+        unsigned int first = getOrientation(read2, 0);
+        unsigned int second = getOrientation(read1, 0);
+
+        if (first == 1 /*R*/) {
+            if (second == 1 /*R*/) {
+                read2->orientation = 4;//RR;
+                read1->orientation = 4;//RR;
 
             } else {
-                read2->orientation = RF;
-                read1->orientation = RF;
+                read2->orientation = 5;//RF;
+                read1->orientation = 5;//RF;
             }
 
         } else {
-            if (second == R) {
-                read2->orientation = FR;
-                read1->orientation = FR;
+            if (second == 1 /*R*/) {
+                read2->orientation = 3;//FR;
+                read1->orientation = 3;//FR;
 
             } else {
-                read2->orientation = FF;
-                read1->orientation = FF;
+                read2->orientation = 2;//FF;
+                read1->orientation = 2;//FF;
             }
         }
 
@@ -1877,9 +2061,9 @@ void exchangeExternFrag(llist_t *fragList,
 
     /* Exchange mates and fill them to a readInfo array */
     readInfo **matesByProc;
-    int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
-
-    md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %d mates, fragList size = %d\n", totalrecv, fragList->size);
+    //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
+    size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
+    md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
 
     //test if we have nothing to do we return
     if (totalrecv == 0) return; 
@@ -1903,7 +2087,7 @@ void exchangeExternFrag(llist_t *fragList,
 
 
     int mateCounter = 0;
-    for (int i = 0; i < totalrecv; i++) {
+    for (size_t i = 0; i < totalrecv; i++) {
         readInfo *mate = getReadFromFingerprint(htbl, matesByProc[i]->fingerprint);
         assert( (mate->pair_num == 1) || (mate->pair_num == 2));
         /* Only external mate of the current buffer has a slot in hash table.

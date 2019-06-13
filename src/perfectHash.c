@@ -525,7 +525,7 @@ void printPerfectHashTable(hashTable *htbl) {
         printf("%zu : a=%-10d, b=%-10d, p=%zu, m=%zu :: ", i, sechp.a, sechp.b, htbl->prime, sechp.m);
 
         for (j = 0; j < sechp.m; j++) {
-            printf("(%zu-%s-%llu)-", j, htbl->secTable[i]->table[j] == NULL ? "X" : htbl->secTable[i]->table[j]->Qname, htbl->secTable[i]->table[j] == NULL ? 0 : htbl->secTable[i]->table[j]->fingerprint);
+            printf("(%zu-%s-%zu)-", j, htbl->secTable[i]->table[j] == NULL ? "X" : htbl->secTable[i]->table[j]->Qname, htbl->secTable[i]->table[j] == NULL ? 0 : htbl->secTable[i]->table[j]->fingerprint);
         }
 
         puts("");

@@ -50,7 +50,7 @@ inline int fastqToPhred (char ch) {
 
 
 void printRead(readInfo *read) {
-    printf("Qname=%s, fingerprint=%llu, mateRank=%zu, matePos=%zu, coord=%zu, check_with_bruck=%u\n", read->Qname, read->fingerprint, read->mate_rank, read->coordMatePos, read->coordPos, read->check_with_bruck);
+    printf("Qname=%s, fingerprint=%zu, mateRank=%d, matePos=%zu, coord=%zu, check_with_bruck=%u\n", read->Qname, read->fingerprint, read->mate_rank, read->coordMatePos, read->coordPos, read->check_with_bruck);
 }
 
 

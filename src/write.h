@@ -135,6 +135,39 @@ void bruckWrite3(
 		size_t ***dest_offset
 );
 
+void bruckMarkdup(
+   
+    int rank,
+    int num_proc,
+    size_t local_readNum,
+    size_t *number_of_reads_by_procs,
+    int *new_rank,
+    int *snd_mate_Lb,
+    int ***rcv_mate_Lb,
+    int *snd_mate_Materank,
+    int ***rcv_mate_Materank,
+    int *snd_mate_phredscore,    
+    int ***rcv_mate_phredscore,
+    size_t *snd_mate_indexAfterSort,
+    size_t ***rcv_mate_indexAfterSort,
+    size_t *snd_mate_unclippedCoordPos,
+    size_t ***rcv_mate_unclippedCoordPos,
+    size_t *snd_mate_coordPos,
+    size_t ***rcv_mate_coordPos,
+    size_t *snd_mate_coordMatePos,
+    size_t ***rcv_mate_coordMatePos,
+    size_t *snd_mate_fingerprint,
+    size_t ***rcv_mate_fingerprint,
+    unsigned int *snd_mate_valueFlag,
+    unsigned int ***rcv_mate_valueFlag,
+    unsigned int *snd_mate_pair_num,
+    unsigned int ***rcv_mate_pair_num,
+    unsigned int *snd_mate_orientation,
+    unsigned int ***rcv_mate_orientation
+
+);
+
+
 void bruck_reads(int rank, 
 				int num_proc, 
 				size_t * buffs_by_procs, 
@@ -155,6 +188,15 @@ void bruck_size(int rank,
 				int ** data_size, 
 				int *new_rank, 
 				int *new_size);
+
+void bruck_unsigned_int(int rank, 
+						int num_proc, 
+						size_t local_readNum, 
+            			size_t *number_of_reads_by_procs, 
+            			unsigned int **data_size, 
+            			int *new_rank, 
+            			unsigned int *new_size);
+
 
 void writeSam_discordant_and_unmapped(int split_rank, 
 									  char* output_dir, 
