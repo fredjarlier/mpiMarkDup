@@ -177,7 +177,7 @@ int create_send_datatype_for_unsigned_int(int rank, int size, size_t *num_reads_
 			(*recv_index)[j] = (i+rank)%size;
 			blocklens[j] = (int)(num_reads_by_procs[(i+rank)%size]);
 			total += blocklens[j];
-			oldtypes[j] = MPI_INT;
+			oldtypes[j] = MPI_UNSIGNED;
 
 			j++;
 		}
