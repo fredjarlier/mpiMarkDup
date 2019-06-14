@@ -1242,6 +1242,7 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     
 
     free(snd_mate_Lb);
+    free(mate_dest_rank);
     free(snd_mate_Materank);
     free(snd_mate_phredscore);
     free(snd_mate_indexAfterSort);
@@ -2064,6 +2065,8 @@ void exchangeExternFrag(llist_t *fragList,
     //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
     size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
+
+    free(mates);
 
     //test if we have nothing to do we return
     if (totalrecv == 0) return; 
