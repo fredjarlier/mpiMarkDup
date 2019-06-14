@@ -276,7 +276,7 @@ void bruck_unsigned_int(int rank, int num_proc, size_t local_readNum,
             total += recv_size_by_proc[m];
         }
 
-        int *interbuff_offset = malloc(total * sizeof(int));
+        unsigned int *interbuff_offset = malloc(total * sizeof(unsigned int));
 
         MPI_Sendrecv(MPI_BOTTOM, 1, dt_send, srank, 0,
                      interbuff_offset, total, MPI_UNSIGNED, rrank, 0, comm, MPI_STATUS_IGNORE);
@@ -292,7 +292,7 @@ void bruck_unsigned_int(int rank, int num_proc, size_t local_readNum,
             }
         }
 
-        int *tmp_var = interbuff_offset;
+        unsigned int *tmp_var = interbuff_offset;
 
         for (m = 0; m < count; m++) {
 
