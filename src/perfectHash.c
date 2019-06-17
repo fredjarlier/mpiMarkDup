@@ -696,8 +696,8 @@ void shareHpAndConstructHtbl(hashTable *htbl, readInfo **arr, size_t size, MPI_C
     //complains 
     // TODO: to test in future release with DATATYPE
 
-    MPI_Bcast(&(hp.a), 1, MPI_SIZE_T, 0, comm);
-    MPI_Bcast(&(hp.b), 1, MPI_SIZE_T, 0, comm);
+    MPI_Bcast(&(hp.a), 1, MPI_INT, 0, comm);
+    MPI_Bcast(&(hp.b), 1, MPI_INT, 0, comm);
     MPI_Bcast(&(hp.m), 1, MPI_SIZE_T, 0, comm);
 
     //MPI_Datatype hp_type;
