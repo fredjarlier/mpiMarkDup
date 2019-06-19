@@ -13,6 +13,10 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 19/06/2019 <br />
+
+1) Fix a corner case <br />
+
 Release 1.0 from the 13/06/2019 <br />
 
 1) Replace All2all with a Bruck when exchange external frags <br />
