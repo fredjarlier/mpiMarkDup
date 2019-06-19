@@ -1256,7 +1256,7 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     free(number_of_mates_by_procs);
 
     
-    return totalrecv;
+    return index;
 }
 
 
