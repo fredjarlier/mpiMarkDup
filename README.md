@@ -116,28 +116,6 @@ options are: <br />
     4 is LOG_DEBUG  <br />
     5 is LOG_TRACE  <br />
 
-Issues
-------
-
-Problem may occur when reads are not uniformely distributed or when data is to small. <br />
-
-the message looks like
-
-rank    0 :: [19:16:14][ INFO  ] start to handle chromosome chr4 ...<br />
-rank    0 :: [19:16:14][ DEBUG ] Elected rank = 0 <br />
-rank    0 :: [19:16:14][ DEBUG ] [MPISORT] we split the rank <br />
-rank    0 :: [19:16:14][ DEBUG ] [MPISORT] Dimensions for bitonic = 2 <br />
-rank    0 :: [19:16:14][ DEBUG ] [MPISORT] Split size             = 3 <br />
-rank    0 :: [19:16:14][ INFO  ] [SORT_ANY_DIM] total_num_read = 8 <br />
-[frederic:22275] *** An error occurred in MPI_Recv <br />
-[frederic:22275] *** reported by process [969080833,0] <br />
-[frederic:22275] *** on communicator MPI COMMUNICATOR 4 SPLIT FROM 0 <br />
-[frederic:22275] *** MPI_ERR_TRUNCATE: message truncated <br />
-[frederic:22275] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort, <br />
-[frederic:22275] ***    and potentially your MPI job) <br />
-
-Reduce the number of cpu when it happens. <br />
-
 How it works
 ------------
 
