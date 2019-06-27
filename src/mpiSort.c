@@ -1283,10 +1283,9 @@ int main (int argc, char *argv[]) {
                 }
                 MPI_Barrier(split_comm);
 
-                /* Algorithm of overLap
-                * But we need to optimate variables and the loop
-                * We need to use MPI_SEND and MPI_RECEIVE
-                */
+		/*
+			INTER RANK OVERLAP ALGORITHM
+		*/
 
                 /*
                     We make sure the reads for a given coordinate is not cut between ranks
@@ -1295,11 +1294,83 @@ int main (int argc, char *argv[]) {
 
                     if the coordinates are the same we keep the previous rank 
                     and we update the number of reads per job
-		        */
+		*/
+
+
+		
+                time_count = MPI_Wtime();
 
                 size_t previous_rank_last_coord;
                 int previous_rank_last_dest;
                 size_t new_dest_rank = 0;
+                size_t previous_coordinates = 0;
+                size_t current_coordinates = 0;
+                int previous_dest_rank = 0;
+                int current_dest_rank = 0;
+                
+
+		size_t j  = 0;
+                size_t j2 = 0;
+                size_t j3 = 0;
+                int j4    = 0;
+
+
+		/*
+			INTRA RANK OVERLAP ALGORITHM
+		*/
+
+                //Now we care for overlap coordinates in intra-rank
+                
+                //we jump zeros we are in padded vector
+		j=j2=j3=j4=0;
+
+                while(local_reads_coordinates_sorted[j]==0) {j++;j2++;j3++;}    
+
+
+                //we return to the first non 0 indices
+                j = j3;
+                
+                previous_coordinates  = local_reads_coordinates_sorted[j3];
+                previous_dest_rank    = local_dest_rank_sorted[j3];
+                
+                if (j3 > 0) j3++; 
+		
+                
+		for (j = j3; j < max_num_read; j++) {
+                
+                    current_coordinates = local_reads_coordinates_sorted[j];
+                    current_dest_rank    = local_dest_rank_sorted[j];                   
+
+                    if ((previous_coordinates == current_coordinates)){
+
+                            if ( ( previous_coordinates != 0 ) && (  previous_dest_rank != current_dest_rank ) ){                   
+                            new_dest_rank++;
+                            local_dest_rank_sorted[j] = previous_dest_rank;
+                        }
+                    }		
+                    else{
+                        // we update previous_coordinates  
+                        previous_dest_rank    = current_dest_rank;
+                    }
+
+                    previous_coordinates = current_coordinates;				
+                }
+            
+
+                /*
+			INTER RANK OVERLAP ALGORITHM
+		*/
+
+                /*
+                    We make sure the reads for a given coordinate is not cut between ranks
+                    To do that we run through the destination rank vector and
+                    each time we jump a rank we verify the coordinates are different
+
+                    if the coordinates are the same we keep the previous rank 
+                    and we update the number of reads per job
+		*/
+
+                           
                 
                 //rank i envoie au rank i + 1
 
@@ -1315,61 +1386,25 @@ int main (int argc, char *argv[]) {
                         MPI_Recv(&previous_rank_last_dest, 1, MPI_INT, split_rank-1, 1, split_comm, MPI_STATUS_IGNORE);
                 }
 
-                size_t j  = 0;
-                size_t j2 = 0;
-                size_t j3 = 0;
-                int j4    = 0;
-                //we jump zeros we are in padded vector
-                while(local_reads_coordinates_sorted[j]==0) {j++;j2++;j3++;}                
+		j=j2=j3=j4=0;
 
-
+                 while(local_reads_coordinates_sorted[j]==0) {j++;j2++;j3++;}             
+		
+		
                 while((previous_rank_last_coord==local_reads_coordinates_sorted[j]) && (local_dest_rank_sorted[j] != previous_rank_last_dest))
                 {
-                    local_dest_rank_sorted[j]=previous_rank_last_dest;
-                    new_dest_rank++;
-                    j++;j2++;
+		    
+		    local_dest_rank_sorted[j]=previous_rank_last_dest;
+		    new_dest_rank++;
+		    j++;j2++;
                 }
+		
 
+		MPI_Barrier(split_comm);
 
-                //Now we care for overlap coordinates in intra-rank
-                size_t previous_coordinates = 0;
-                size_t current_coordinates = 0;
-                int previous_dest_rank = 0;
-                int current_dest_rank = 0;
+		
+                md_log_rank_debug( chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 3] time spent = %f s\n", split_rank, MPI_Wtime() - time_count );
                 
-                //we return to the first non 0 indices
-                j = j3;
-                
-                previous_coordinates  = local_reads_coordinates_sorted[j3];
-                previous_dest_rank    = local_dest_rank_sorted[j3];
-                
-                j3++;
-
-                for (j = j3; j < max_num_read; j++) {
-                
-                    current_coordinates = local_reads_coordinates_sorted[j];
-                    current_dest_rank    = local_dest_rank_sorted[j];                   
-
-                    if ((previous_coordinates == current_coordinates)){
-
-                            if ( ( previous_coordinates != 0 ) && (  previous_dest_rank != current_dest_rank ) ){
-                   
-                            new_dest_rank++;
-                            local_dest_rank_sorted[j] = previous_dest_rank;
-                        }
-                    }		
-                    else{
-                        // we update previous_coordinates  
-                        previous_dest_rank    = current_dest_rank;
-                    }
-
-                    previous_coordinates = current_coordinates;				
-                }
-            
-
-                md_log_rank_debug(chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 2] time spent = %f s\n", split_rank, MPI_Wtime() - time_count);
-                
-                //if (new_dest_rank) fprintf(stderr, "rank %d :::::[MPISORT][BITONIC 2] number of new dest rank = %zu s\n", split_rank, new_dest_rank) ;
                 
                 // now we shall update the number of read per rank 
                 // we call new_num_reads_per_job the vector holding 
@@ -1393,7 +1428,6 @@ int main (int argc, char *argv[]) {
                 size_t old_total_reads = 0;
                 size_t new_total_reads = 0;                  
 
-                md_log_rank_debug( chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 3] time spent = %f s\n", split_rank, MPI_Wtime() - time_count );
                 
                 // now we make a reduce operation on num_reads_per_dest_rank
                 MPI_Allreduce( num_reads_per_dest_rank, new_num_reads_per_job, dimensions, MPI_LONG_LONG_INT, MPI_SUM, split_comm );
@@ -1718,6 +1752,26 @@ int main (int argc, char *argv[]) {
                 md_log_rank_debug(chosen_split_rank, "[MPISORT] we call write SAM\n");
 
                 malloc_trim(0);
+
+
+		/*
+		 *
+		 *	Now we change the dest rank in case of overlap
+		 *
+		 *
+      		 */
+
+
+		
+
+
+
+
+
+
+
+
+
 
                 time_count = MPI_Wtime();
 
