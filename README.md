@@ -17,6 +17,8 @@ Release 1.0 from the 27/06/2019 <br />
 
 1) Fix a corner case. We check intra-node overlap before extra-node overlap in mpiSort.c. <br />
 
+2) Fix a bug in sort_any_dim.c  <br />
+
 Release 1.0 from the 19/06/2019 <br />
 
 1) Fix a corner case <br />
