@@ -285,10 +285,10 @@ void parallel_sort_any_dim(
 				size_t *temp_buf2 	= malloc(num_reads_per_jobs[j2]* sizeof(size_t));
 				size_t *temp_buf3 	= malloc(num_reads_per_jobs[j2]* sizeof(size_t));
 
-				MPI_Recv(temp_buf, num_reads_per_jobs[j], MPI_INT, j2, 0, split_comm, &status);
-				MPI_Recv(temp_buf1, num_reads_per_jobs[j], MPI_INT, j2, 1, split_comm, &status);
-				MPI_Recv(temp_buf2, num_reads_per_jobs[j], MPI_LONG_LONG_INT, j2, 2, split_comm, &status);
-				MPI_Recv(temp_buf3, num_reads_per_jobs[j], MPI_LONG_LONG_INT, j2, 3, split_comm, &status);
+				MPI_Recv(temp_buf, num_reads_per_jobs[j2], MPI_INT, j2, 0, split_comm, &status);
+				MPI_Recv(temp_buf1, num_reads_per_jobs[j2], MPI_INT, j2, 1, split_comm, &status);
+				MPI_Recv(temp_buf2, num_reads_per_jobs[j2], MPI_LONG_LONG_INT, j2, 2, split_comm, &status);
+				MPI_Recv(temp_buf3, num_reads_per_jobs[j2], MPI_LONG_LONG_INT, j2, 3, split_comm, &status);
 
 				st=0;
 				size_t st = start_num_reads_per_jobs[j2];
