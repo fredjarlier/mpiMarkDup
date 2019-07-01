@@ -504,7 +504,7 @@ int main (int argc, char *argv[]) {
 
     MPI_Allreduce(&nb_reads_total, &nb_reads_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD); //Sums all of the total reads for each rank into the variable nb_reads_global
     md_log_rank_debug(0, "total read to sort  = %zu \n", nb_reads_global);
-    md_log_rank_debug(0, "number of chromosome  = %d + discordants + unmapped \n", nbchr - 2);
+    md_log_rank_debug(0, "number of chromosome  = %d + discordants + unmapped \n\n", nbchr - 2);
     /*
      *  We write the mapped reads in a file named chrX.bam
      *  We loop by chromosoms.
@@ -513,6 +513,7 @@ int main (int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     for (i = 0; i < nbchr ; i++) {
+
         if ( i == nbchr - 2){ 
             //If unmapped, we compress these reads in one folder without sort
             MPI_File mpi_file_split_comm2;
@@ -525,7 +526,7 @@ int main (int argc, char *argv[]) {
             //    fprintf(stderr, "rank %d :::: total read to sort for unmapped = %zu \n", rank, total_reads);
             //}
             
-            md_log_rank_debug(0, "total read to sort for unmapped = %zu\n, readNumberByChr ! %zu \n",total_reads, readNumberByChr[i]);
+            md_log_rank_debug(0, "total read to sort for unmapped = %zu\n\n", total_reads);
 
             MPI_Barrier(MPI_COMM_WORLD);
 
@@ -642,6 +643,9 @@ int main (int argc, char *argv[]) {
                 MPI_Scatter( color_vec_to_send, 1, MPI_INT, &local_color, 1, MPI_INT, chosen_rank, MPI_COMM_WORLD);
                 MPI_Scatter( key_vec_to_send, 1, MPI_INT, &local_key, 1, MPI_INT, chosen_rank, MPI_COMM_WORLD);
 
+                free(color_vec_to_send);
+                free(key_vec_to_send);
+
                 // we create a communicator
                 // we group all communicator
                 // with color of zero
@@ -733,9 +737,6 @@ int main (int argc, char *argv[]) {
 
                 split_comm_to_free = 0;
                 file_pointer_to_free = 0;
-
-                free(color_vec_to_send);
-                free(key_vec_to_send);
 
             }
         }
@@ -886,6 +887,10 @@ int main (int argc, char *argv[]) {
         MPI_Scatter( color_vec_to_send, 1, MPI_INT, &local_color, 1, MPI_INT, chosen_rank, MPI_COMM_WORLD);
         MPI_Scatter( key_vec_to_send, 1, MPI_INT, &local_key, 1, MPI_INT, chosen_rank, MPI_COMM_WORLD);
         MPI_Barrier(MPI_COMM_WORLD);
+
+        free(color_vec_to_send);
+        free(key_vec_to_send);
+
 
         // now we create a communicator
         // we group all communicator
@@ -1247,9 +1252,8 @@ int main (int argc, char *argv[]) {
                 */
 
                 //Nombre de read pour chaque processus
-                size_t *nb_read_num = (size_t *)malloc(num_proc * sizeof(size_t));
-
-                MPI_Allgather(&first_local_readNum, 1, MPI_LONG_LONG_INT, nb_read_num, 1, MPI_LONG_LONG_INT, split_comm);
+                //size_t *nb_read_num = (size_t *)malloc(num_proc * sizeof(size_t));
+                //MPI_Allgather(&first_local_readNum, 1, MPI_LONG_LONG_INT, nb_read_num, 1, MPI_LONG_LONG_INT, split_comm);
 
                 // we compute the position of of the read in the first
                 // reference without the zero padding of bitonic
@@ -1309,36 +1313,36 @@ int main (int argc, char *argv[]) {
                 int current_dest_rank = 0;
                 
 
-		size_t j  = 0;
+		        size_t j  = 0;
                 size_t j2 = 0;
                 size_t j3 = 0;
                 int j4    = 0;
 
 
-		/*
-			INTRA RANK OVERLAP ALGORITHM
-		*/
+        		/*
+        			INTRA RANK OVERLAP ALGORITHM
+        		*/
 
                 //Now we care for overlap coordinates in intra-rank
                 
                 //we jump zeros we are in padded vector
-		j=j2=j3=j4=0;
+    	        j=j2=j3=j4=0;
 
-                while(local_reads_coordinates_sorted[j]==0) {j++;j2++;j3++;}    
+                while(local_reads_coordinates_sorted[j]==0 && j < max_num_read) {j++;j2++;j3++;}    
 
 
                 //we return to the first non 0 indices
                 j = j3;
                 
+                if (j3 > 0 && j3 < (max_num_read - 1)) j3++; 
+
                 previous_coordinates  = local_reads_coordinates_sorted[j3];
                 previous_dest_rank    = local_dest_rank_sorted[j3];
-                
-                if (j3 > 0) j3++; 
 		
                 
-		for (j = j3; j < max_num_read; j++) {
+		        for (j = j3; j < max_num_read; j++) {
                 
-                    current_coordinates = local_reads_coordinates_sorted[j];
+                    current_coordinates  = local_reads_coordinates_sorted[j];
                     current_dest_rank    = local_dest_rank_sorted[j];                   
 
                     if ((previous_coordinates == current_coordinates)){
@@ -1357,21 +1361,16 @@ int main (int argc, char *argv[]) {
                 }
             
 
-                /*
-			INTER RANK OVERLAP ALGORITHM
-		*/
-
-                /*
-                    We make sure the reads for a given coordinate is not cut between ranks
+                    /*
+			         INTER RANK OVERLAP ALGORITHM
+		            We make sure the reads for a given coordinate is not cut between ranks
                     To do that we run through the destination rank vector and
                     each time we jump a rank we verify the coordinates are different
 
                     if the coordinates are the same we keep the previous rank 
                     and we update the number of reads per job
-		*/
-
-                           
-                
+		            */
+               
                 //rank i envoie au rank i + 1
 
                 //Cwe care for overlapped coordinates between rank
@@ -1386,21 +1385,21 @@ int main (int argc, char *argv[]) {
                         MPI_Recv(&previous_rank_last_dest, 1, MPI_INT, split_rank-1, 1, split_comm, MPI_STATUS_IGNORE);
                 }
 
-		j=j2=j3=j4=0;
+		        j=j2=j3=j4=0;
 
-                 while(local_reads_coordinates_sorted[j]==0) {j++;j2++;j3++;}             
+                while(local_reads_coordinates_sorted[j]==0 && j < max_num_read ) {j++;j2++;j3++;}             
 		
 		
                 while((previous_rank_last_coord==local_reads_coordinates_sorted[j]) && (local_dest_rank_sorted[j] != previous_rank_last_dest))
                 {
 		    
-		    local_dest_rank_sorted[j]=previous_rank_last_dest;
-		    new_dest_rank++;
-		    j++;j2++;
+		          local_dest_rank_sorted[j]=previous_rank_last_dest;
+		          new_dest_rank++;
+		          j++;j2++;
                 }
 		
 
-		MPI_Barrier(split_comm);
+		        MPI_Barrier(split_comm);
 
 		
                 md_log_rank_debug( chosen_split_rank, "[MPISORT][COMPUTE NEW DEST RANK STEP 3] time spent = %f s\n", split_rank, MPI_Wtime() - time_count );
@@ -1432,6 +1431,8 @@ int main (int argc, char *argv[]) {
                 // now we make a reduce operation on num_reads_per_dest_rank
                 MPI_Allreduce( num_reads_per_dest_rank, new_num_reads_per_job, dimensions, MPI_LONG_LONG_INT, MPI_SUM, split_comm );
                         
+                free(num_reads_per_dest_rank);
+
                 size_t final_local_readNum = 0;	
                 final_local_readNum = new_num_reads_per_job[split_rank];
                 
@@ -1621,10 +1622,11 @@ int main (int argc, char *argv[]) {
                  *
                  */
 
-                COMM_WORLD = split_comm;
+                
                 time_count = MPI_Wtime();
 
-                bruckWrite3(split_rank,
+                bruckWrite3(split_comm, 
+                            split_rank,
                             dimensions,
                             count6,
                             number_of_reads_by_procs,
@@ -1753,28 +1755,7 @@ int main (int argc, char *argv[]) {
 
                 malloc_trim(0);
 
-
-		/*
-		 *
-		 *	Now we change the dest rank in case of overlap
-		 *
-		 *
-      		 */
-
-
-		
-
-
-
-
-
-
-
-
-
-
                 time_count = MPI_Wtime();
-
                 
                 writeSam(
                     split_rank,
@@ -1853,8 +1834,8 @@ int main (int argc, char *argv[]) {
             MPI_Comm_free(&split_comm);
         }
 
-        free(color_vec_to_send);
-        free(key_vec_to_send);
+        //if (color_vec_to_send) free(color_vec_to_send);
+        //if (key_vec_to_send) free(key_vec_to_send);
 
     }// end loop upon chromosoms (line 665)
 
@@ -1862,12 +1843,15 @@ int main (int argc, char *argv[]) {
     free(goff);
     free(local_data);
 
-    for ( i = 0; i < nbchr; i++) {
+    for ( i = 0; i < nbchr - 2; i++) {
         Read *tmp = reads[i], *next;
 
         while (tmp) {
+
             next = tmp->next;
-            free(tmp);
+            if (next == NULL) {free(tmp); break;} 
+            if (tmp) free(tmp); 
+            else break;
             tmp = next;
         }
     }

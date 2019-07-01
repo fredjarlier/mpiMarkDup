@@ -13,6 +13,12 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 01/07/2019 <br />
+
+1) Fix memory leaks <br />
+
+2) Remove global variable COMM_WORLD <br />
+
 Release 1.0 from the 27/06/2019 <br />
 
 1) Fix a corner case. We check intra-node overlap before extra-node overlap in mpiSort.c. <br />

@@ -1140,7 +1140,7 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     size_t totalrecv = numberOfReadsToSend;
 
     //now we call bruck
-    bruckMarkdup(
+    bruckMarkdup(   comm,
                     rank,
                     num_proc,
                     numberOfReadsToSend,
@@ -2191,6 +2191,7 @@ void exchangeExternFrag(llist_t *fragList,
  */
 
 char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm comm) {
+
 
     MPI_Comm previousComm = md_get_log_comm();
     md_set_log_comm(comm);

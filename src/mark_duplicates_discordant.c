@@ -320,6 +320,8 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
 
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFragDiscordant] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
 
+    free(mates);
+
     //test if we have nothing to do we return
     if (totalrecv == 0) return; 
 

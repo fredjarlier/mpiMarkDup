@@ -39,7 +39,6 @@
 size_t g_wu_readNum;
 size_t g_wu_totalReadNum;
 size_t g_wu_master;
-MPI_Comm COMM_WORLD;
 MPI_Status status;
 
 void create_read_dt(int rank, int num_proc, int *ranks, int* buffs, char** data, MPI_Datatype* dt, size_t readNum)
@@ -60,7 +59,7 @@ void create_read_dt(int rank, int num_proc, int *ranks, int* buffs, char** data,
  	int blocklens[readNum];
 
  	//fprintf(stderr, "Rank %d :::::[WRITE] readNum = %zu \n", rank, readNum );
- 	MPI_Barrier(COMM_WORLD);
+ 	
  	MPI_Datatype oldtypes[readNum];
 
  	/* Adress originally referencing on data
@@ -420,7 +419,7 @@ size_t get_send_size(int rank, int size, size_t* buffs, size_t** send_size, int 
 }
 
 
-void send_size_t_all_to_master(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
+void send_size_t_all_to_master(MPI_Comm comm, int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
 		size_t *start_size_per_job, size_t *all_data, size_t *data)
 {
 	MPI_Status status;
@@ -439,7 +438,7 @@ void send_size_t_all_to_master(int rank, int num_proc, int master, size_t size, 
 			if (j != master){
 
 				size_t *temp_buf =(size_t *) malloc(size_per_jobs[j]* sizeof(size_t));
-				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, COMM_WORLD, &status);
+				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, comm, &status);
 
 				size_t st = start_size_per_job[j];
 				for (k = 0; k < size_per_jobs[j]; k++){
@@ -452,11 +451,11 @@ void send_size_t_all_to_master(int rank, int num_proc, int master, size_t size, 
 	}
 	else{
 
-		MPI_Send(data, size, MPI_LONG_LONG_INT, master,  0, COMM_WORLD);
+		MPI_Send(data, size, MPI_LONG_LONG_INT, master,  0, comm);
 	}
 }
 
-void send_size_t_all_to_master_bitonic(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
+void send_size_t_all_to_master_bitonic(MPI_Comm comm, int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
 		size_t *start_size_per_job, size_t *all_data, size_t *data, size_t start_index)
 {
 	MPI_Status status;
@@ -478,7 +477,7 @@ void send_size_t_all_to_master_bitonic(int rank, int num_proc, int master, size_
 			if (j != master){
 
 				size_t *temp_buf =(size_t *) malloc(size_per_jobs[j]* sizeof(size_t));
-				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, COMM_WORLD, &status);
+				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, comm, &status);
 
 				size_t st = start_size_per_job[j];
 				for (k = 0; k < size_per_jobs[j]; k++){
@@ -491,11 +490,11 @@ void send_size_t_all_to_master_bitonic(int rank, int num_proc, int master, size_
 	}
 	else{
 
-		MPI_Send(data, size, MPI_LONG_LONG_INT, master,  0, COMM_WORLD);
+		MPI_Send(data, size, MPI_LONG_LONG_INT, master,  0, comm);
 	}
 }
 
-void send_size_t_all_to_master_bitonic_V2(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
+void send_size_t_all_to_master_bitonic_V2(MPI_Comm comm, int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
 		size_t *start_size_per_job, size_t *all_data, size_t *data, size_t start_index)
 {
 	MPI_Status status;
@@ -518,7 +517,7 @@ void send_size_t_all_to_master_bitonic_V2(int rank, int num_proc, int master, si
 			if (j != master){
 
 				size_t *temp_buf =(size_t *) malloc(size_per_jobs[j]* sizeof(size_t));
-				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, COMM_WORLD, &status);
+				MPI_Recv(temp_buf, size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, comm, &status);
 				/*
 				fprintf(stderr, "%d ::::: [send_size_t_all_to_master_bitonic_V2] rank %d recieve from %d size = %zu \n",
 								rank, rank, j, size_per_jobs[j]);
@@ -540,13 +539,13 @@ void send_size_t_all_to_master_bitonic_V2(int rank, int num_proc, int master, si
 		//fprintf(stderr, "%d ::::: [send_size_t_all_to_master_bitonic_V2] rank %d send to %d at start index= %zu size = %zu \n",rank,
 		//		rank, master, start_index, size);
 
-		MPI_Send(data + start_index, size, MPI_LONG_LONG_INT, master,  0, COMM_WORLD);
+		MPI_Send(data + start_index, size, MPI_LONG_LONG_INT, master,  0, comm);
 	}
 }
 
 
 
-void send_size_t_master_to_all(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
+void send_size_t_master_to_all(MPI_Comm comm, int rank, int num_proc, int master, size_t size, size_t *size_per_jobs,
 		size_t *start_size_per_job, size_t *all_data, size_t *data)
 {
 	MPI_Status status;
@@ -556,7 +555,7 @@ void send_size_t_master_to_all(int rank, int num_proc, int master, size_t size, 
 	if (rank != master){
 		//fprintf(stderr, "%d ::::: [send_size_t_master_to_all] rank %d recv %zu from %d \n",rank, rank, size, master);
 
-		MPI_Recv(data, size, MPI_LONG_LONG_INT, master, 0, COMM_WORLD, &status);
+		MPI_Recv(data, size, MPI_LONG_LONG_INT, master, 0, comm, &status);
 
 
 	}
@@ -575,14 +574,14 @@ void send_size_t_master_to_all(int rank, int num_proc, int master, size_t size, 
 				//	rank, rank, size_per_jobs[j], j, start_size_per_job[j]);
 
 				MPI_Send(&all_data[start_size_per_job[j]],
-						size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, COMM_WORLD);
+						size_per_jobs[j], MPI_LONG_LONG_INT, j, 0, comm);
 
 			}
 		}
 	}
 }
 
-void send_int_all_to_master(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs, size_t *start_size_per_job, int *all_data, int *data)
+void send_int_all_to_master(MPI_Comm comm, int rank, int num_proc, int master, size_t size, size_t *size_per_jobs, size_t *start_size_per_job, int *all_data, int *data)
 {
 	MPI_Status status;
 	int j;
@@ -600,7 +599,7 @@ void send_int_all_to_master(int rank, int num_proc, int master, size_t size, siz
 			if (j != master){
 
 				int *temp_buf =(int *) malloc(size_per_jobs[j]* sizeof(int));
-				MPI_Recv(temp_buf, size_per_jobs[j], MPI_INT, j, 0, COMM_WORLD, &status);
+				MPI_Recv(temp_buf, size_per_jobs[j], MPI_INT, j, 0, comm, &status);
 
 				size_t st = start_size_per_job[j];
 				for (k = 0; k < size_per_jobs[j]; k++){
@@ -613,18 +612,18 @@ void send_int_all_to_master(int rank, int num_proc, int master, size_t size, siz
 	}
 	else{
 
-		MPI_Send(data, size, MPI_INT, master,  0, COMM_WORLD);
+		MPI_Send(data, size, MPI_INT, master,  0, comm);
 	}
 }
 
-void send_int_master_to_all(int rank, int num_proc, int master, size_t size, size_t *size_per_jobs, size_t *start_size_per_job, int *all_data, int *data)
+void send_int_master_to_all(MPI_Comm comm, int rank, int num_proc, int master, size_t size, size_t *size_per_jobs, size_t *start_size_per_job, int *all_data, int *data)
 {
 	MPI_Status status;
 	int j;
 	size_t k;
 
 	if (rank != master){
-		MPI_Recv(data, size, MPI_INT, master, 0, COMM_WORLD, &status);
+		MPI_Recv(data, size, MPI_INT, master, 0, comm, &status);
 	}
 	else {
 
@@ -640,7 +639,7 @@ void send_int_master_to_all(int rank, int num_proc, int master, size_t size, siz
 
 				//fprintf(stderr, "%d ::::: [send_int_master_to_all] rank %d send %zu to %d from %zu\n",
 				//					rank, rank, size_per_jobs[j], j, start_size_per_job[j]);
-				MPI_Send(&all_data[start_size_per_job[j]], size_per_jobs[j], MPI_INT, j, 0, COMM_WORLD);
+				MPI_Send(&all_data[start_size_per_job[j]], size_per_jobs[j], MPI_INT, j, 0, comm);
 			}
 		}
 	}

@@ -86,7 +86,8 @@ void read_data_for_writing(int rank,
 							MPI_Info finfo, 
 							MPI_Comm COMM_WORLD);
 
-void bruckWrite(int rank, 
+void bruckWrite(MPI_Comm comm,
+				int rank, 
 				int num_proc,
 				size_t local_readNum, 
 				size_t* number_of_reads_by_procs, 
@@ -100,6 +101,7 @@ void bruckWrite(int rank,
 	);
 
 void bruckWrite2(
+	    MPI_Comm comm,
 		int rank,
 		int num_proc,
 		size_t local_readNum,
@@ -116,6 +118,7 @@ void bruckWrite2(
 );
 
 void bruckWrite3(
+		MPI_Comm comm,
 		int rank,
 		int num_proc,
 		size_t local_readNum,
@@ -136,7 +139,7 @@ void bruckWrite3(
 );
 
 void bruckMarkdup(
-   
+    MPI_Comm comm,
     int rank,
     int num_proc,
     size_t local_readNum,
@@ -164,16 +167,17 @@ void bruckMarkdup(
     unsigned int ***rcv_mate_pair_num,
     unsigned int *snd_mate_orientation,
     unsigned int ***rcv_mate_orientation
-
 );
 
 
-void bruck_reads(int rank, 
-				int num_proc, 
-				size_t * buffs_by_procs, 
-				char** data2);
+void bruck_reads(	MPI_Comm comm, 
+					int rank, 
+					int num_proc, 
+					size_t * buffs_by_procs, 
+					char** data2);
 
-void bruck_offsets(int rank, 
+void bruck_offsets( MPI_Comm comm,
+					int rank, 
 					int num_proc, 
 					int local_readNum, 
 					size_t* number_of_reads_by_procs, 
@@ -181,21 +185,23 @@ void bruck_offsets(int rank,
 					int *new_rank, 
 					size_t* new_offset);
 
-void bruck_size(int rank, 
-				int num_proc, 
-				size_t local_readNum, 
-				size_t* number_of_reads_by_procs, 
-				int ** data_size, 
-				int *new_rank, 
-				int *new_size);
+void bruck_size(	MPI_Comm comm,
+					int rank, 
+					int num_proc, 
+					size_t local_readNum, 
+					size_t* number_of_reads_by_procs, 
+					int ** data_size, 
+					int *new_rank, 
+					int *new_size);
 
-void bruck_unsigned_int(int rank, 
-						int num_proc, 
-						size_t local_readNum, 
-            			size_t *number_of_reads_by_procs, 
-            			unsigned int **data_size, 
-            			int *new_rank, 
-            			unsigned int *new_size);
+void bruck_unsigned_int( 	MPI_Comm comm,
+	 						int rank, 
+							int num_proc, 
+							size_t local_readNum, 
+            				size_t *number_of_reads_by_procs, 
+            				unsigned int **data_size, 
+            				int *new_rank, 
+            				unsigned int *new_size);
 
 
 void writeSam_discordant_and_unmapped(int split_rank, 
@@ -232,49 +238,7 @@ void writeSam_any_dim(
 		int* new_read_size,
 		int* new_rank,
 		char *data,
-		size_t start_offset_in_file);
-
-
-
-void bruckWrite_any_dim(
-		int rank,
-		int num_proc,
-		size_t local_readNum,
-		size_t* number_of_reads_by_procs,
-		int *new_rank,
-		size_t *buffs_by_procs,
-		char*** data2,
-		size_t *new_offset,
-		size_t*** data_offsets,
-		int *new_size,
-		int ***data_size
-	);
-
-void bruck_reads_any_dim(
-		int rank,
-		int num_proc,
-		size_t * buffs_by_procs,
-		char** data2
-		);
-
-void bruck_offsets_any_dim(
-		int rank,
-		int num_proc,
-		int local_readNum,
-		size_t* number_of_reads_by_procs,
-		size_t ** data_offsets,
-		int *new_rank,
-		size_t* new_offset
-		);
-
-void bruck_size_any_dim(
-		int rank,
-		int num_proc,
-		size_t local_readNum,
-		size_t* number_of_reads_by_procs,
-		int ** data_size,
-		int *new_rank,
-		int *new_size
+		size_t start_offset_in_file
 		);
 
 #endif
