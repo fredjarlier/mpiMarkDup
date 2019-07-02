@@ -1304,50 +1304,32 @@ int main (int argc, char *argv[]) {
 		
                 time_count = MPI_Wtime();
 
-                size_t previous_rank_last_coord;
-                int previous_rank_last_dest;
+                size_t previous_rank_last_coord = 0;
+                int previous_rank_last_dest = 0;
                 size_t new_dest_rank = 0;
                 size_t previous_coordinates = 0;
                 size_t current_coordinates = 0;
                 int previous_dest_rank = 0;
                 int current_dest_rank = 0;
                 
-
 		        size_t j  = 0;
-                size_t j2 = 0;
-                size_t j3 = 0;
                 int j4    = 0;
-
-
         		/*
         			INTRA RANK OVERLAP ALGORITHM
         		*/
 
-                //Now we care for overlap coordinates in intra-rank
+                previous_coordinates  = local_reads_coordinates_sorted[j];
+                previous_dest_rank    = local_dest_rank_sorted[j];
+		                      
                 
-                //we jump zeros we are in padded vector
-    	        j=j2=j3=j4=0;
-
-                while(local_reads_coordinates_sorted[j]==0 && j < max_num_read) {j++;j2++;j3++;}    
-
-
-                //we return to the first non 0 indices
-                j = j3;
-                
-                if (j3 > 0 && j3 < (max_num_read - 1)) j3++; 
-
-                previous_coordinates  = local_reads_coordinates_sorted[j3];
-                previous_dest_rank    = local_dest_rank_sorted[j3];
-		
-                
-		        for (j = j3; j < max_num_read; j++) {
+		        for (j = 1; j < max_num_read; j++) {
                 
                     current_coordinates  = local_reads_coordinates_sorted[j];
                     current_dest_rank    = local_dest_rank_sorted[j];                   
 
                     if ((previous_coordinates == current_coordinates)){
 
-                            if ( ( previous_coordinates != 0 ) && (  previous_dest_rank != current_dest_rank ) ){                   
+                        if ( ( previous_coordinates != 0 ) && (  previous_dest_rank != current_dest_rank ) ){                   
                             new_dest_rank++;
                             local_dest_rank_sorted[j] = previous_dest_rank;
                         }
@@ -1359,17 +1341,17 @@ int main (int argc, char *argv[]) {
 
                     previous_coordinates = current_coordinates;				
                 }
-            
+                               
 
-                    /*
-			         INTER RANK OVERLAP ALGORITHM
-		            We make sure the reads for a given coordinate is not cut between ranks
-                    To do that we run through the destination rank vector and
-                    each time we jump a rank we verify the coordinates are different
+                /*
+			    INTER RANK OVERLAP ALGORITHM
+		        We make sure the reads for a given coordinate is not cut between ranks
+                To do that we run through the destination rank vector and
+                each time we jump a rank we verify the coordinates are different
 
-                    if the coordinates are the same we keep the previous rank 
-                    and we update the number of reads per job
-		            */
+                if the coordinates are the same we keep the previous rank 
+                and we update the number of reads per job
+		        */
                
                 //rank i envoie au rank i + 1
 
@@ -1385,17 +1367,18 @@ int main (int argc, char *argv[]) {
                         MPI_Recv(&previous_rank_last_dest, 1, MPI_INT, split_rank-1, 1, split_comm, MPI_STATUS_IGNORE);
                 }
 
-		        j=j2=j3=j4=0;
+		        j=0;
 
-                while(local_reads_coordinates_sorted[j]==0 && j < max_num_read ) {j++;j2++;j3++;}             
+                //while(local_reads_coordinates_sorted[j]==0 && j < max_num_read ) {j++;j2++;j3++;}             
 		
 		
-                while((previous_rank_last_coord==local_reads_coordinates_sorted[j]) && (local_dest_rank_sorted[j] != previous_rank_last_dest))
+                while((j < max_num_read) && (previous_rank_last_coord==local_reads_coordinates_sorted[j]) 
+                            && (local_dest_rank_sorted[j] != previous_rank_last_dest))
                 {
 		    
 		          local_dest_rank_sorted[j]=previous_rank_last_dest;
 		          new_dest_rank++;
-		          j++;j2++;
+		          j++;
                 }
 		
 
