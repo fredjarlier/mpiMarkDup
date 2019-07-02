@@ -17,7 +17,9 @@ Release 1.0 from the 02/07/2019 <br />
 
 1) Fix a bug when pairs overlap 2 ranks <br />
 
-2) TODO: now the major bottle neck is the computation of prime number for perfect hash table. <br />
+2) Fix a memory leak <br />
+
+3) TODO: now the major bottle neck is the computation of prime number for perfect hash table. <br />
 		 we shall consider a list of prime number and select it according to the number of reads. <br /> 
 
 Release 1.0 from the 01/07/2019 <br />

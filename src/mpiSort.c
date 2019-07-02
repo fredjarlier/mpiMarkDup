@@ -1419,6 +1419,8 @@ int main (int argc, char *argv[]) {
                 size_t final_local_readNum = 0;	
                 final_local_readNum = new_num_reads_per_job[split_rank];
                 
+                free(new_num_reads_per_job);
+
                 MPI_Allreduce( &final_local_readNum, &new_total_reads , 1, MPI_LONG_LONG_INT, MPI_SUM, split_comm );
                 MPI_Allreduce( &first_local_readNum, &old_total_reads , 1, MPI_LONG_LONG_INT, MPI_SUM, split_comm );
                 assert (old_total_reads == new_total_reads);
