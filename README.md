@@ -149,6 +149,26 @@ This problem does not impact the results in the downstream analysis. <br />
 
 In conclusion when you test reproducibility always take the same number of cpu. <br />   
 
+
+TODO 
+----
+
+List of thing that left to do before production level <br />
+
+1) Build only one file with all chromosoms and unmapped <br />
+ 
+2) Integrate the discordant reads in chromosom <br />
+
+3) Test with multiple libraries eg multiple RG <br />
+
+4) Accelerate the construction of the hashtable. Considering a list of prime number <br />
+
+5) Modify the bruck with a its zero-copy version <br />
+
+6) Generate a bam file instead of gz <br />
+
+
+
 Authors and contacts
 --------------------
 
