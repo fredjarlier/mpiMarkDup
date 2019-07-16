@@ -157,7 +157,18 @@ readInfo *buildReadEndsDiscordant(readInfo *read1, readInfo *read2, llist_t *rea
  *   @todo consider to use a struct to pack readNum and readIndex
  */
 
-size_t parseLibrariesDiscordant(char *bufferReads, Interval *intervalByProc, llist_t *fragList, llist_t *readEndsList, readInfo ***readArr, char ***samTokenLines, size_t readNum, size_t readIndex, chrInfo *chr, lbInfo *lb, MPI_Comm comm) {
+size_t parseLibrariesDiscordant(char *bufferReads, 
+                                Interval *intervalByProc, 
+                                llist_t *fragList, 
+                                llist_t *readEndsList, 
+                                readInfo ***readArr, 
+                                char ***samTokenLines, 
+                                size_t readNum, 
+                                size_t readIndex, 
+                                chrInfo *chr, 
+                                lbInfo *lb,
+                                size_t *disc_offsets_source, 
+                                MPI_Comm comm) {
     int rank, num_proc;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &num_proc);
@@ -185,15 +196,16 @@ size_t parseLibrariesDiscordant(char *bufferReads, Interval *intervalByProc, lli
     int ret;
 
     size_t readEndscall = 0;
-
+    size_t counter = 0;
     while (*q) {
         progression = 100 * ((float)readCounter / readNum);
         char *tok;
 
         // parse read
         getLine(&q, &tok);
-        read = readParsing(tok, intervalByProc, readCounter, chr, lb, comm);
+        read = readParsingDiscordant(tok, intervalByProc, readCounter, counter, chr, lb, disc_offsets_source, comm);
         
+        counter++;
 
         if (read) {
             chr->lastChr = read->readChromosome;
@@ -282,6 +294,277 @@ size_t parseLibrariesDiscordant(char *bufferReads, Interval *intervalByProc, lli
     free(bufferReads);
     assert(readCounter - readIndex == readNum);
     return readCounter;
+}
+
+
+/**
+ *  @date 2018 Feb 26
+ *  @brief Parse a read line and fill a read structure. The resultant read is inserted in a library.
+ *  @param[in] sam_buff a read line to parse
+ *  @param[in] intervalByProc interval of coordinate by process
+ *  @param[in] chrList array of chromosome name
+ *  @param[in] chrNum chromosome number
+ *  @param[in] lastChr last read chromosome
+ *  @param[in] comm markDuplicate communicator
+ *  @return the read filled.
+ *  @note lastChr is used to optimize the parsing of field chromosome
+ */
+
+readInfo *readParsingDiscordant (char *sam_buff, 
+                                Interval *intervalByProc, 
+                                size_t readIndex,
+                                size_t counter, 
+                                chrInfo *chr, 
+                                lbInfo *lb,
+                                size_t *disc_offsets_source,  
+                                MPI_Comm comm) {
+
+    int rank, num_proc;
+    char *q = sam_buff;
+    char *tokenCar;
+    char *u;
+    unsigned int readUnmapped;
+    unsigned int mateUnmapped;
+    unsigned int secondaryAlignment;
+    unsigned int supplementaryAlignment;
+    unsigned int firstInPair;
+    int i = 0;
+    size_t score;
+    readInfo *read = calloc(1, sizeof(readInfo));
+   
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &num_proc);
+
+    read->indexAfterSort = readIndex;
+
+    while (1) {
+        switch (i++) {
+
+            // These fields are ignored
+
+            case 4: // The MAPQ
+            case 8: // the TLEN
+            case 9: // the segment SEQ
+                q = strchr(q, '\t') + 1;
+                break;
+
+            case 0:
+                getTokenTab(&q, &tokenCar);
+                read->Qname = tokenCar;
+                break;
+
+            case 1: // Flag part
+                getTokenTab(&q, &tokenCar);
+                read->valueFlag  = atoi(tokenCar);
+                
+                assert(read->valueFlag);    
+                readUnmapped = readBits((unsigned int)read->valueFlag, 2);
+                mateUnmapped = readBits((unsigned int)read->valueFlag, 3);
+                secondaryAlignment = readBits((unsigned int)read->valueFlag, 8);
+                supplementaryAlignment = readBits((unsigned int)read->valueFlag, 11);
+                firstInPair = readBits((unsigned int)read->valueFlag, 6);
+                //fprintf (stderr, "[IN readParsing] ::: read->Qname = %s ::: firstInPair = %u \n", read->Qname, firstInPair);
+                //fprintf (stderr, "[IN readParsing] ::: read->Qname = %s ::: flag = %u \n", read->Qname, read->valueFlag );
+                if (firstInPair == 1)
+                    read->pair_num = 1;
+                else
+                    read->pair_num = 2;
+                
+        /*
+        fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: tokenCar = %s \n", read->Qname, tokenCar);
+        fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: read->valueFlag = %zu \n", read->Qname, read->valueFlag);
+        fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: readUnmapped = %d \n", read->Qname, readUnmapped);
+        fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: mateUnmapped = %d \n", read->Qname, mateUnmapped);
+        fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname = %s ::: secondaryAlignment = %d \n", read->Qname, secondaryAlignment);
+        fprintf (stderr, "[IN READ2MATEFP] ::: read->Qname  = %s ::: supplementaryAlignment = %d \n", read->Qname, supplementaryAlignment);
+        */
+
+                // https://gatkforums.broadinstitute.org/gatk/discussion/6747/how-to-mark-duplicates-with-markduplicates-or-markduplicateswithmatecigar
+                // secondary and supplementary alignment records are skipped and never flagged as duplicate.
+                if (supplementaryAlignment || secondaryAlignment) {
+                    freeRead(read);
+                    free(tokenCar);
+                    return NULL;
+                }
+
+                //unmapped : we ignore, we don't mark it according to Mark Duplicate
+                if (readUnmapped) {
+                    freeRead(read);
+                    free(tokenCar);
+                    return NULL;
+                }
+
+                if (mateUnmapped) {
+                    read->mateChromosome = -1;
+                }
+
+                read->orientation = getOrientation(read, 0);
+
+                free(tokenCar);
+                break;
+
+            case 2: // RNAME part
+                getTokenTab(&q, &tokenCar);
+
+                /* read's chromosome is the same as its previous read */
+                if (strcmp(chr->chrList[chr->lastChr], tokenCar) == 0) {
+                    read->readChromosome = chr->lastChr;
+
+                } else {
+                    for (int j = 0; j < chr->chrNum; ++j) {
+                        if (strcmp(chr->chrList[j], tokenCar) == 0) {
+                            read->readChromosome = j;
+                            break;
+                        }
+                    }
+                }
+
+                free(tokenCar);
+                break;
+
+            case 3: // The position chromosome wise
+                getTokenTab(&q, &tokenCar);
+                read->coordPos = atoll(tokenCar);
+                free(tokenCar);
+                break;
+
+            case 5: // the CIGAR string
+                getTokenTab(&q, &tokenCar);
+                read->cigar = tokenCar;
+                assert(read->cigar);
+
+                if ( strcmp(read->cigar, "*") == 0 ) {
+                    //shall not be marked as duplicate but it's mate yes
+                    read->readChromosome = -1;
+
+                } else {
+                    fillUnclippedCoord(read);
+                }
+
+                /* TODO: we can free early cigar string after unclipped coordinate computation */
+
+                break;
+
+            case 6: // the RNEXT
+                getTokenTab(&q, &tokenCar);
+
+                /* mate chromosome same as read chromosome */
+                if (strcmp(tokenCar, "=") == 0) {
+
+                    //normally we should never get here
+                    read->mateChromosome = read->readChromosome;
+                    read->discordant = 0;
+
+                } else {
+                    for (int j = 0; j < chr->chrNum; ++j) {
+                        if (strcmp(chr->chrList[j], tokenCar) == 0) {
+                            read->mateChromosome = j;
+                            read->discordant = 0;
+                            read->offset_source_sam = disc_offsets_source[counter];
+                            //fprintf(stderr, "[MARKDUPDISCORDANT] [READPARSING] Found a discordant %s at offset %zu \n", read->Qname, disc_offsets_source[counter]); 
+                            break;
+                        }
+                    }
+                }
+
+                free(tokenCar);
+                break;
+
+
+            case 7: // here we have the PNEXT, the position of the next read
+                getTokenTab(&q, &tokenCar);
+                read->coordMatePos = atoll(tokenCar);
+
+                // we tell if the mate is in the buffer
+                // we check if the mate's coordinates are outer the buffer limits
+                         
+                checkMateBuffer(read, intervalByProc, comm);
+                free(tokenCar);
+
+                break;
+
+            case 10:
+                getTokenTab(&q, &tokenCar);
+                // here we got the quality string
+                u = tokenCar;
+                score = 0;
+
+                //we loop the token char and compute quality
+                while (*u) {
+                    score = fastqToPhred(*u);
+
+                    /**
+                     * Only take account base which has quality over 15
+                     * See htsjdk/samtools/DuplicateScoringStrategy.java, function getSumOfBaseQualities
+                     */
+
+                    if (score >= 15) {
+                        read->phred_score += (size_t)score;
+                    }
+
+                    u++;
+                }
+
+                /**
+                 * MarkDuplicates use SUM_OF_BASE_QUALITIES as scoring strategy.
+                 * See htsjdk/samtools/DuplicateScoringStrategy.java, function computeDuplicateScore()
+                 * Note that 0x7FFF = 32767 is the max value of short type in java,
+                 * Since phred_score is stored in short type and we need to compute pair phred score later,
+                 * htsjdk takes the minimum value between the computed phred score and the half of short max value to
+                 * prevent overflow.
+                 */
+
+                read->phred_score = min(read->phred_score, (int) (0x7FFF / 2));
+                read->pairPhredScore = read->phred_score;
+                free(tokenCar);
+                break;
+
+            default:
+                break;
+        }
+
+
+        if (i == 11) {
+            break;
+        }
+    }
+
+
+    if (opticalDistance > 0) {
+        read->physicalLocation = computePhysicalLocation(read);
+    }
+    assert(read->valueFlag);    
+    assert (( read->pair_num == 1) || ( read->pair_num == 2 ));
+
+    read->fingerprint = read2Fingerprint(read);
+    assert(read->fingerprint);
+
+    //Now we search in the flag for LB name
+    while (getTokenTab(&q, &tokenCar)) {
+        if (strncmp(tokenCar, "LB:Z:", strlen("LB:Z:")) == 0) {
+            //fillReadLBValue(tokenCar, read);
+            char *lbName = getReadTagValue(tokenCar, "LB:Z:");
+
+            if (strcmp(lb->lbList[lb->lastLb], lbName) == 0) {
+                read->readLb = lb->lastLb;
+
+            } else {
+                for (i = 0; i < lb->lbNum; ++i) {
+                    if (strcmp(lb->lbList[i], lbName) == 0) {
+                        read->readLb = i;
+                    }
+                }
+            }
+
+            free(lbName);
+            free(tokenCar);
+            break;
+        }
+
+        free(tokenCar);
+    }
+    
+    return read;
 }
 
 
@@ -558,16 +841,22 @@ void findDuplicaDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *
  * @return a read buffer with duplicate reads marked.
  */
 
-char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, MPI_Comm comm) {
+char *markDuplicateDiscordant (char *bufferReads, 
+                                size_t readNum, 
+                                char *header, 
+                                MPI_Comm comm,
+                                size_t *disc_offsets_source,
+                                size_t **disc_dup_offset_source,
+                                size_t *disc_dup_number) {
 
-    MPI_Comm previousComm = md_get_log_comm();
-    md_set_log_comm(comm);
+    //MPI_Comm previousComm = md_get_log_comm();
+    //md_set_log_comm(comm);
 
     int rank, num_proc;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &num_proc);
     double timeStamp, timeStart = MPI_Wtime();
-
+  
     chrInfo chr;
     lbInfo lb;
     initChrInfo(&chr, header);
@@ -605,6 +894,7 @@ char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, 
                     readIndexOffset, 
                     &chr,  
                     &lb, 
+                    disc_offsets_source,
                     comm);
 
     md_log_debug("End of parsing and clustering %f seconds\n", MPI_Wtime() - timeStamp);
@@ -676,24 +966,24 @@ char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, 
     llist_merge_sort(readEndsList, 0);
 
     /*
-    readEnds_size = fragList_size = 0;
+    size_t readEnds_size = 0;
+    size_t fragList_size = 0;
     
     for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
-        readInfo *read = node->read;
-        md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
         fragList_size++;
     }
 
     
     
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
-        readInfo *read = node->read;
-        md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
+        //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
         readEnds_size++;
     }
-
+    
    fprintf(stderr, " TRACE 4 readEndsList size = %zu :::: fragList size =%zu \n", readEnds_size, fragList_size);
-    */
+   */ 
 
     md_log_debug("Finished to sort list in %f seconds\n", MPI_Wtime() - timeStamp);
 
@@ -710,35 +1000,90 @@ char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, 
     
     timeStamp = MPI_Wtime();
     
-    MPI_Barrier(comm);
+    
     MPI_Reduce(&localDuplicates, &totalDuplicates, 1, MPI_INT, MPI_SUM, 0, comm);
     MPI_Reduce(&localOpticalDuplicates, &totalOpticalDuplicates, 1, MPI_INT, MPI_SUM, 0, comm);
-    md_log_info("Found %d duplicates and %d optical duplicates in %f seconds\n", totalDuplicates, totalOpticalDuplicates,  MPI_Wtime() - timeStamp);
+    md_log_info("Found %d duplicates and %d optical duplicates in %f seconds\n\n", totalDuplicates, totalOpticalDuplicates,  MPI_Wtime() - timeStamp);
 
-    md_log_debug("Start to write marked buffer...\n");
     timeStamp = MPI_Wtime();
+
     char *newBuff = writeBuff(samTokenLines, readArr, readNum);
-    md_log_debug("Finished to mark buffer %f seconds\n", MPI_Wtime() - timeStamp);
-
-    md_log_debug("Free data structures ...\n");
-    timeStamp = MPI_Wtime();
+    
     free(samTokenLines);
-    /* free all reads and fragList */
+    free(intervalByProc);
+    free(readNumByProc);
+    
+    
+    //if (tmp_disc_dup_offset_source) free(tmp_disc_dup_offset_source);
+    if (disc_offsets_source)        free(disc_offsets_source);
+
+    freeChrInfo(&chr);
+    freeLbInfo(&lb);
+
+    hashTableDestroy(htbl);
+
+    //md_set_log_comm(previousComm);
+
+    MPI_Barrier(comm);
+    md_log_trace("Finished to free data structures %f seconds\n", MPI_Wtime() - timeStamp);
+    md_log_debug("Finished to mark buffer %f seconds\n", MPI_Wtime() - timeStamp);
+    /*
+        ///////////////////////////
+        //////////////////////////
+        Now we fill up the disc_offset source vector
+        //////////////////////////
+        //////////////////////////
+        //////////////////////////
+    */
+
+    disc_dup_number[0] = localDuplicates + localOpticalDuplicates;
+
+    //we return the total of duplicate for this rank
+   
+    // we loop the readArr
+    // we use data_offset_source to check 
+    // the discordant reads
+    size_t j;
+    size_t index_in_offset = 0;
+
+     for ( j = 0; j < readNum; j++) {
+        //we search discordant reads
+        if (!readArr[j] || !readArr[j]->d) continue;
+        else if (readArr[j]->d == 1){
+            index_in_offset++;            
+        }
+    }
+
+    size_t *disc_dup_offset_source_tmp = calloc( index_in_offset,  sizeof(size_t));
+    index_in_offset = 0;
+
+    for ( j = 0; j < readNum; j++) {
+        //we search discordant reads
+        if (!readArr[j] || !readArr[j]->d) continue;
+        else if (readArr[j]->d == 1){
+            disc_dup_offset_source_tmp[index_in_offset] =  (int)readArr[j]->offset_source_sam;
+            index_in_offset++;            
+        }
+    }
+    *disc_dup_offset_source =  disc_dup_offset_source_tmp;
+    *disc_dup_number = index_in_offset;
+
+     /* free all reads and fragList */
     llist_destruct(fragList);
     /* free all nodes of readEndsList */
     llist_clear(readEndsList);
     /* free readEndsList */
     llist_destruct(readEndsList);
-    free(intervalByProc);
-    free(readNumByProc);
-    free(readArr);
-    freeChrInfo(&chr);
-    freeLbInfo(&lb);
 
-    hashTableDestroy(htbl);
-    md_log_trace("Finished to free data structures %f seconds\n", MPI_Wtime() - timeStamp);
-    md_log_debug("End to mark duplicates %f seconds\n", MPI_Wtime() - timeStart);
-    md_set_log_comm(previousComm);
+    //for (size_t m = 0; m < readNum; m++)
+    //    free(readArr[m]);
+    free(readArr);
+
+    //*disc_dup_offset_source = NULL;
+    md_log_debug("Total time spend in mark duplicates %f seconds\n", MPI_Wtime() - timeStart);
+          
+    MPI_Barrier(comm);
+
     return newBuff;
 }
 

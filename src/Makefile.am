@@ -10,13 +10,13 @@ mpiMDHDR = mark_duplicates.h mark_duplicates_discordant.h createLBList.h perfect
 
 mpiSortSRC = mpiSort.c mpiSort_utils.c mergeSort.c parabitonicsort.c \
 	parabitonicsort2.c parabitonicsort3.c qksort.c parser.c \
-	tokenizer.c preWrite.c write.c  write_utils.c sort_any_dim.c
+	tokenizer.c preWrite.c write.c  write_utils.c sort_any_dim.c  
 
 mpiSortHDR = mpiSort_utils.h mergeSort.h parabitonicsort.h \
 	parabitonicsort2.h parabitonicsort3.h qksort.h \
 	parser.h tokenizer.h preWrite.h write.h write_utils.h \
 	bgzf.c bgzf.h khash.h sort_any_dim.h \
-	compat.h
+	compat.h 
 
 AM_CFLAGS= -g -O2 -Wall -Wextra -Werror -std=gnu99 
 #AM_CFLAGS= -g -O2

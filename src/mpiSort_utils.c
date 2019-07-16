@@ -49,6 +49,7 @@ void get_coordinates_and_offset_source_and_size_and_free_reads(int rank, int *lo
 
    	size_t j;
    	Read* chr = data_chr;
+   	Read* tmp;
 
    	//we initialize offset source and size_source
    	for(j = 0; j < local_readNum; j++){
@@ -64,8 +65,9 @@ void get_coordinates_and_offset_source_and_size_and_free_reads(int rank, int *lo
    		coordinates[j] = chr->coord;
    		offset[j] = chr->offset_source_file;
    		size[j] = (int)chr->offset; //read length
+        tmp = chr;
         chr = chr->next;
-        //free(tmp);
+        free(tmp);
    	}
 
 }

@@ -22,19 +22,20 @@ typedef enum {
 typedef struct readInfo {
     
 
-    char *Qname;                        /**< read name, TODO:we don't need to store Qname, we just use it to compte physical location for optical duplicates */
-    char *cigar;                        /**< cigar string, TODO:we don't need to store cigar, we just use it to compute unclipped coordinate */
+    char *Qname;                            /**< read name, TODO:we don't need to store Qname, we just use it to compte physical location for optical duplicates */
+    char *cigar;                            /**< cigar string, TODO:we don't need to store cigar, we just use it to compute unclipped coordinate */
     
-                 /**< mate chromosome number */
+                                            /**< mate chromosome number */
                  
-    unsigned int d: 1;                    /**< tell if the read is a duplicate */
-    unsigned int checked: 1;              /**< tell the read has already been checked */
-    unsigned int check_with_bruck: 2;     /**< the mate is in another buffer we need bruck to check */
-    unsigned int external: 1;             /**< it means this read comes from another buffer we don(t mark it as duplicate */
-    unsigned int isOpticalDuplicate : 1;  /**< read is optical duplicate ? */
+    unsigned int d: 1;                      /**< tell if the read is a duplicate */
+    unsigned int checked: 1;                /**< tell the read has already been checked */
+    unsigned int check_with_bruck: 2;       /**< the mate is in another buffer we need bruck to check */
+    unsigned int external: 1;               /**< it means this read comes from another buffer we don(t mark it as duplicate */
+    unsigned int isOpticalDuplicate : 1;    /**< read is optical duplicate ? */
     unsigned int valueFlag;                   /**< flag of the read */
-    unsigned int pair_num;               /**< tell if the read is first(1) or second in the pair(2) */    
+    unsigned int pair_num;                  /**< tell if the read is first(1) or second in the pair(2) */    
     unsigned int orientation;
+    unsigned int discordant;
 
     int mate_rank;                   /**< the rank where the mate is supposed to be */
     int phred_score;                 /**< read phred score */
@@ -49,6 +50,7 @@ typedef struct readInfo {
     size_t coordMatePos;                /**< clipped mate position (coordinate in sam file) */
     size_t indexAfterSort;              /**< read index in file */
     size_t mateIndexAfterSort;          /**< mate index in file */
+    size_t offset_source_sam;           // offset of the duplicate in the source file 
     coord physicalLocation;             /**< read physical location (in QNAME) */
     //orientation orientation;            /**< fragment or paired-end orientation (reverse strand + first/second in pair) */
 
@@ -66,7 +68,7 @@ typedef struct {
     unsigned int pair_num;
     unsigned int valueFlag;
     unsigned int orientation;
-
+    
     int readLb;
     int mateRank;                  /**< mate rank */
     int phredScore;                /**< mate phredScore */

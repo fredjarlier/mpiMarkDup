@@ -63,8 +63,35 @@ void writeSam(
 		char* data,
 		size_t offset_data_in_file,
 		size_t original_local_readNum,
-		size_t final_local_readNum
+		size_t final_local_readNum,
+		size_t *disc_dup_offset_source,
+    	size_t *disc_dup_number
 		);
+
+size_t *writeSam_discordant(
+    int rank,
+    char *output_dir,
+    char *header,
+    size_t local_readNum,
+    char *chrName,
+    int total_num_proc,  //this is the number of proc in split communication
+    MPI_Comm split_comm,
+    int master_rank,
+    MPI_Info finfo,
+    int compression_level,
+    size_t *offset_dest_phase1,
+    size_t *offset_source_phase1,
+    int *read_size_phase1,
+    int *dest_rank_phase1,
+    // use when redistribute the reads according to original rank
+    // when sorting of offset sources is done
+    int *source_rank_phase1,
+    char *data,
+    size_t start_offset_in_file,
+    size_t previous_local_readNum,
+    size_t final_local_readNum,
+    size_t *disc_dup_number
+);
 
 
 size_t init_offset_and_size_free_chr(size_t* offset, 
@@ -85,7 +112,7 @@ void read_data_for_writing(int rank,
 							MPI_File in, 
 							MPI_Info finfo, 
 							MPI_Comm COMM_WORLD);
-
+/*
 void bruckWrite(MPI_Comm comm,
 				int rank, 
 				int num_proc,
@@ -99,6 +126,13 @@ void bruckWrite(MPI_Comm comm,
 				int *new_size, 
 				int ***data_size
 	);
+*/
+void bruckWrite(MPI_Comm comm, int rank, int num_proc,
+                size_t local_readNum, size_t *number_of_reads_by_procs, int *new_rank,
+                size_t *buffs_by_procs, char ***data2,
+                size_t *new_offset, size_t ***data_offsets,
+                size_t *new_offset_source, size_t ***data_offsets_source,
+                int *new_size, int ***data_size);
 
 void bruckWrite2(
 	    MPI_Comm comm,
@@ -204,7 +238,7 @@ void bruck_unsigned_int( 	MPI_Comm comm,
             				unsigned int *new_size);
 
 
-void writeSam_discordant_and_unmapped(int split_rank, 
+void writeSam_unmapped(int split_rank, 
 									  char* output_dir, 
 									  char* header, 
 									  size_t local_readNum, 
@@ -238,7 +272,9 @@ void writeSam_any_dim(
 		int* new_read_size,
 		int* new_rank,
 		char *data,
-		size_t start_offset_in_file
+		size_t start_offset_in_file,
+		size_t **disc_dup_offset_source,
+        size_t *disc_dup_number
 		);
 
 #endif

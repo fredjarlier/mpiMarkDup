@@ -10,80 +10,23 @@ The project is still under development so feel free to test it and report.
 
 This is an open project initiated by Institut Curie HPC team and students from Paris Descartes University.
 
-Release notes 
--------------
+Development Branch.
 
-Release 1.0 from the 02/07/2019 <br />
+In this branch we add new features for the future master release.
 
-1) Fix a bug when pairs overlap 2 ranks <br />
+Here are the list of things in construction. 
 
-2) Fix a memory leak <br />
+1) Integrate the discordant reads in chromosom <br />
 
-3) TODO: now the major bottle neck is the computation of prime number for perfect hash table. <br />
-		 we shall consider a list of prime number and select it according to the number of reads. <br /> 
+2) Build only one file with all chromosoms and unmapped <br />
 
-Release 1.0 from the 01/07/2019 <br />
+3) Accelerate the construction of the hashtable. Considering a list of prime number <br />
 
-1) Fix memory leaks <br />
+4) Modify the bruck with a its zero-copy version <br />
 
-2) Remove global variable COMM_WORLD <br />
+5) Generate a bam file instead of gz <br />
 
-Release 1.0 from the 27/06/2019 <br />
-
-1) Fix a corner case. We check intra-node overlap before extra-node overlap in mpiSort.c. <br />
-
-2) Fix a bug in sort_any_dim.c  <br />
-
-Release 1.0 from the 19/06/2019 <br />
-
-1) Fix a corner case <br />
-
-Release 1.0 from the 13/06/2019 <br />
-
-1) Replace All2all with a Bruck when exchange external frags <br />
-
-2) Change some types in readInfo and mateInfo structures <br />
-
-Release 1.0 from the 23/05/2019 <br />
-
-1) Fix issues with openssl 1.0.2k-fips. <br />
-
-Release 1.0 from the 15/05/2019 <br />
-
-1) Cleaning up the code. <br />
-
-Release 1.0 from the 07/05/2019 <br />
-
-1) Fix reproducibility issue with 1 cpu. <br />
-
-Release 1.0 from the 06/05/2019 <br />
-
-1) Fix tie case (tested only with power of 2 cpu). <br />
-
-Release 1.0 from the 08/04/2019 <br />
-
-1) fix reproducibility issue but still have a corner case.  <br />
-
-Release 1.0 from the 31/03/2019 <br />
-
-1) fix corner case when reads distribution is unbalanced. <br />
-
-Release 1.0 from the 28/03/2019 <br />
-
-1) fix some integer conversion and prototype. <br />
-2) fix a corner case when a rank recieve no mate from other rank. <br />
-
-Release 1.0 from the 22/03/2019 <br />
-
-1) fix the coordinates overlapped between 2 ranks in case we are not power of 2 dimension (again it's better if you are in power of 2 dimension) <br />
-
-Release 1.0 from the 16/03/2019 <br />
-
-1) cleaning of the code <br />
-2) we forgot to write unmapped in previous release <br />
-3) update of the overlapped coordinates between rank algorithm <br />
-4) next step : a singularity definition file, more tests and profiling, upgrade of compression algorithm. <br />   
-
+6) Test with multiple libraries eg multiple RG <br />
 
 requirements
 ------------
@@ -148,25 +91,6 @@ If the number of cpu differs the reproducibility is not garantee. Indeed tie cas
 This problem does not impact the results in the downstream analysis. <br />
 
 In conclusion when you test reproducibility always take the same number of cpu. <br />   
-
-
-TODO 
-----
-
-List of thing that left to do before production level <br />
-
-1) Build only one file with all chromosoms and unmapped <br />
- 
-2) Integrate the discordant reads in chromosom <br />
-
-3) Test with multiple libraries eg multiple RG <br />
-
-4) Accelerate the construction of the hashtable. Considering a list of prime number <br />
-
-5) Modify the bruck with a its zero-copy version <br />
-
-6) Generate a bam file instead of gz <br />
-
 
 
 Authors and contacts

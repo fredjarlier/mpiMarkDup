@@ -141,7 +141,21 @@ int main (int argc, char *argv[]) {
     unsigned char threshold;
     size_t input_file_size;
     size_t unmappedSize = 0;
+
+    // variable for discordants
+    //size_t total_reads_discordant = 0;
+    
+    size_t *local_disc_duplicate_offset_source = malloc(1*sizeof(size_t));
+    //total_disc_duplicate_offset_source = malloc(1*sizeof(size_t *));  //will hold the offset in the unsorted sam of the discordants reads
+    
+    size_t *all_disc_duplicate_offset_source =  NULL; //malloc(sizeof(size_t)); 
+    
+    size_t *total_disc_duplicates = calloc(1, sizeof(size_t));      
+    //size_t *total_duplicate_number = calloc(1, sizeof(size_t));
+    size_t *local_disc_duplicate_number = calloc(1, sizeof(size_t));
+    
     size_t discordantSize = 0;
+
     size_t *readNumberByChr = NULL, *localReadNumberByChr = NULL;
     double time_count;
     double toc;
@@ -512,7 +526,7 @@ int main (int argc, char *argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    for (i = 0; i < nbchr ; i++) {
+    for (i = nbchr -1 ; i >= 0 ; i--) {
 
         if ( i == nbchr - 2){ 
             //If unmapped, we compress these reads in one folder without sort
@@ -526,7 +540,7 @@ int main (int argc, char *argv[]) {
             //    fprintf(stderr, "rank %d :::: total read to sort for unmapped = %zu \n", rank, total_reads);
             //}
             
-            md_log_rank_debug(0, "total read to sort for unmapped = %zu\n\n", total_reads);
+            md_log_rank_debug(0, "total read for unmapped = %zu\n", total_reads);
 
             MPI_Barrier(MPI_COMM_WORLD);
 
@@ -690,7 +704,7 @@ int main (int argc, char *argv[]) {
                     time_count = MPI_Wtime();
                     MPI_Barrier(MPI_COMM_WORLD);
 
-                    writeSam_discordant_and_unmapped(
+                    writeSam_unmapped(
                         split_rank,
                         output_dir,
                         header,
@@ -707,7 +721,7 @@ int main (int argc, char *argv[]) {
                         //if (split_rank == chosen_rank) {
                         //    fprintf(stderr, "rank %d :::::[MPISORT] Time to write chromosom %s ,  %f seconds \n\n\n", split_rank, chrNames[nbchr - s], MPI_Wtime() - time_count);
                         //}
-                    md_log_rank_debug(chosen_rank, "[MPISORT] Time to write chromosom %s ,  %f seconds \n\n\n", chrNames[nbchr - i], MPI_Wtime() - time_count);
+                    md_log_rank_debug(chosen_rank, "[MPISORT] Time to write chromosom %s ,  %f seconds \n\n\n", chrNames[nbchr - 2], MPI_Wtime() - time_count);
 
                     
                     while (reads[i]->next != NULL) {
@@ -739,7 +753,10 @@ int main (int argc, char *argv[]) {
                 file_pointer_to_free = 0;
 
             }
-        }
+            md_log_rank_debug(0, "Finish for unmapped \n\n");
+        
+        } //end if (i == nbchr - 2) 
+
         md_log_rank_info(0, "start to handle chromosome %s ...\n", chrNames[i]);
 
         /*
@@ -1057,20 +1074,20 @@ int main (int argc, char *argv[]) {
                 local_offset_source_sorted[0]       = 0;
 
                 //those vectors are the same that  local_..._sorted but without zero padding
-                size_t *local_reads_coordinates_sorted_trimmed = NULL;
-                int *local_dest_rank_sorted_trimmed = NULL;
-                int *local_reads_sizes_sorted_trimmed = NULL;
-                size_t *local_offset_source_sorted_trimmed = NULL;
-                size_t *local_offset_dest_sorted_trimmed = NULL;
-                int *local_source_rank_sorted_trimmed = NULL;
+                size_t *local_reads_coordinates_sorted_trimmed      = NULL;
+                int *local_dest_rank_sorted_trimmed                 = NULL;
+                int *local_reads_sizes_sorted_trimmed               = NULL;
+                size_t *local_offset_source_sorted_trimmed          = NULL;
+                size_t *local_offset_dest_sorted_trimmed            = NULL;
+                int *local_source_rank_sorted_trimmed               = NULL;
 
                 //vectors used in the bruck just after the parabitonic sort
-                size_t *local_reads_coordinates_sorted_trimmed_for_bruck = NULL;
-                int *local_dest_rank_sorted_trimmed_for_bruck = NULL;
-                int *local_reads_sizes_sorted_trimmed_for_bruck = NULL;
-                size_t *local_offset_source_sorted_trimmed_for_bruck = NULL;
-                size_t *local_offset_dest_sorted_trimmed_for_bruck = NULL;
-                int *local_source_rank_sorted_trimmed_for_bruck = NULL;
+                size_t *local_reads_coordinates_sorted_trimmed_for_bruck    = NULL;
+                int *local_dest_rank_sorted_trimmed_for_bruck               = NULL;
+                int *local_reads_sizes_sorted_trimmed_for_bruck             = NULL;
+                size_t *local_offset_source_sorted_trimmed_for_bruck        = NULL;
+                size_t *local_offset_dest_sorted_trimmed_for_bruck          = NULL;
+                int *local_source_rank_sorted_trimmed_for_bruck             = NULL;
 
                 //task Init offset and size for source - free chr
                 // from mpiSort_utils.c
@@ -1091,6 +1108,9 @@ int main (int argc, char *argv[]) {
 
                 for (j = 0; j < local_readNum; j++) {
                     coord_index[j] = j;
+
+                //fprintf(stderr, "[MPISORT][AFTER GET COORDINATES] chr %d :: local_offset_source_unsorted[%zu] = %zu \n", i, j, local_offset_source_unsorted[j]); 
+
                 }
 
                 //To start we sort locally the reads coordinates.
@@ -1691,6 +1711,7 @@ int main (int argc, char *argv[]) {
                     j += number_of_reads_by_procs[m_int];
                 }
 
+
                 free(number_of_reads_by_procs);
 
                 if (dest_rank != NULL) {
@@ -1732,8 +1753,12 @@ int main (int argc, char *argv[]) {
                     assert ( local_dest_rank_sorted_trimmed[j]            < split_size );
                     assert ( local_source_rank_sorted_trimmed[j]          < split_size );
                 }
-                */
+                
 
+                for ( j = 0; j < local_readNum; j++){
+                   fprintf(stderr, "[MPISORT][CHR = %i] local_offset_source_sorted_trimmed[%zu] = %zu \n", i ,j, local_offset_source_sorted_trimmed[j]);
+                 }
+                */
                 free(local_reads_coordinates_sorted_trimmed);
 
                 md_log_rank_debug(chosen_split_rank, "[MPISORT] we call write SAM\n");
@@ -1741,34 +1766,161 @@ int main (int argc, char *argv[]) {
                 malloc_trim(0);
 
                 time_count = MPI_Wtime();
-                
-                writeSam(
-                    split_rank,
-                    output_dir,
-                    header,
-                    local_readNum,
-                    chrNames[i],
-                    split_size,
-                    split_comm,
-                    chosen_split_rank,
-                    finfo,
-                    compression_level,
-                    local_offset_dest_sorted_trimmed,
-                    local_offset_source_sorted_trimmed,
-                    local_reads_sizes_sorted_trimmed,
-                    local_dest_rank_sorted_trimmed,
-                    local_source_rank_sorted_trimmed,
-                    local_data,
-                    goff[rank],
-                    first_local_readNum,
-		            final_local_readNum
-                );
+                                   
+                if (i == nbchr - 1){
+
+                    //now if we are in discordant case we call writesam with empty vectors 
+                    //of discordant duplicates 
+                    //local_disc_duplicate_offset_source = malloc( total_reads_discordant * sizeof(size_t));
+
+                    local_disc_duplicate_offset_source = writeSam_discordant(
+                                                            split_rank,
+                                                            output_dir,
+                                                            header,
+                                                            local_readNum,
+                                                            chrNames[i],
+                                                            split_size,
+                                                            split_comm,
+                                                            chosen_split_rank,
+                                                            finfo,
+                                                            compression_level,
+                                                            local_offset_dest_sorted_trimmed,
+                                                            local_offset_source_sorted_trimmed,
+                                                            local_reads_sizes_sorted_trimmed,
+                                                            local_dest_rank_sorted_trimmed,
+                                                            local_source_rank_sorted_trimmed,
+                                                            local_data,
+                                                            goff[rank],
+                                                            first_local_readNum,
+                                        		            final_local_readNum,
+                                                            local_disc_duplicate_number
+                                                        );
+
+                    /*
+                    for (size_t k = 0; k < local_disc_duplicate_number[0]; k++){
+                        fprintf(stderr, "[MPISORT] rank %d all dup disc offset = %zu  offset= %zu \n", split_rank, 
+                                k, local_disc_duplicate_offset_source[k]);
+
+                    }        
+                    */
+                    /*
+                        Now we exchange every local_disc_duplicate_offset_source
+                        We use AllGather
+                    */    
+                    
+                    
+                    size_t max_disc_duplicates = 0;
+
+                    MPI_Allreduce(local_disc_duplicate_number, 
+                                    total_disc_duplicates, 
+                                    1, 
+                                    MPI_LONG_LONG_INT, 
+                                    MPI_SUM, split_comm
+                                    );
+
+                    size_t *disc_dup_by_rank = malloc(num_proc * sizeof(size_t));
+                        
+                    MPI_Allgather( local_disc_duplicate_number , 
+                                        1, 
+                                        MPI_LONG_LONG_INT,
+                                        disc_dup_by_rank, 
+                                        1,
+                                        MPI_LONG_LONG_INT,
+                                        split_comm);
+
+                    MPI_Allreduce(local_disc_duplicate_number ,
+                                    &max_disc_duplicates, 
+                                        1, 
+                                        MPI_LONG_LONG_INT,
+                                        MPI_MAX,
+                                        split_comm);
+    
+                    size_t *tmp_vec = calloc(max_disc_duplicates, sizeof(size_t));
+
+                    for ( j = 0; j < *local_disc_duplicate_number; j++) 
+                        tmp_vec[j] = local_disc_duplicate_offset_source[j];
+
+
+
+                    size_t tmp2 = max_disc_duplicates * split_size;
+
+                    md_log_debug("rank %d total disc offset= %zu \n", rank, *total_disc_duplicates);
+                    
+                    size_t *tmp_vec2 = calloc(tmp2,  sizeof(size_t));
+          
+                    //double timeStamp = MPI_Wtime();
+                    MPI_Barrier(split_comm);
+                        
+                    MPI_Allgather( tmp_vec, 
+                                max_disc_duplicates, 
+                                MPI_LONG_LONG_INT,
+                                tmp_vec2, 
+                                max_disc_duplicates,
+                                MPI_LONG_LONG_INT,
+                                split_comm);
+                                            
+                    MPI_Barrier(split_comm);
+                    /*
+                     for ( j = 0; j < tmp2; j++) {
+                        //disc_dup_offset_source[0][j] = disc_dup_offset_source_tmp[j];
+                        if ( rank == 0 )
+                            fprintf(stderr, " TRACE 1 tmp_vec2[%zu] =%zu \n", j, tmp_vec2[j]);
+                    }
+                    */
+  
+                    all_disc_duplicate_offset_source = calloc(*total_disc_duplicates,  sizeof(size_t));
+                    size_t ind = 0;
+
+                    for ( j = 0; j < tmp2; j++) {
+                        if (tmp_vec2[j] != 0){
+                            all_disc_duplicate_offset_source[ind] = tmp_vec2[j];
+                            ind++;
+                        }
+                    }
+                    
+                    free(tmp_vec);
+                    free(tmp_vec2);
+                    free(local_disc_duplicate_offset_source);
+                    free(local_disc_duplicate_number);
+
+                }
+                else{
+
+                    //if not in dicordant case we call writesam with vectors 
+                    // of discordant duplicates of all ranks 
+                    
+                    writeSam(
+                        split_rank,
+                        output_dir,
+                        header,
+                        local_readNum,
+                        chrNames[i],
+                        split_size,
+                        split_comm,
+                        chosen_split_rank,
+                        finfo,
+                        compression_level,
+                        local_offset_dest_sorted_trimmed,
+                        local_offset_source_sorted_trimmed,
+                        local_reads_sizes_sorted_trimmed,
+                        local_dest_rank_sorted_trimmed,
+                        local_source_rank_sorted_trimmed,
+                        local_data,
+                        goff[rank],
+                        first_local_readNum,
+                        final_local_readNum,
+                        all_disc_duplicate_offset_source,
+                        total_disc_duplicates
+                    );
+
+                }
 
                 //if (split_rank == chosen_split_rank) {
                 //    fprintf(stderr, "rank %d :::::[MPISORT][WRITESAM] chromosom %s :::  %f seconds\n\n\n", split_rank, chrNames[i], MPI_Wtime() - time_count);
                 //}
-                md_log_rank_info(chosen_split_rank, "[MPISORT][WRITESAM] chromosom %s :: %f seconds\n\n", chrNames[i], MPI_Wtime() - time_count);
+                md_log_rank_info(chosen_split_rank, "[MPISORT] chromosom %s :: %f seconds\n\n", chrNames[i], MPI_Wtime() - time_count);
 
+               
             } else {
 
                 /*
@@ -1796,7 +1948,8 @@ int main (int argc, char *argv[]) {
                     goff[rank],
                     headerSize,
                     header,
-                    chrNames[i]  );
+                    chrNames[i]  
+                    );
 
             } //end if dimensions < split_rank
 
@@ -1827,7 +1980,10 @@ int main (int argc, char *argv[]) {
     MPI_Info_free(&finfo);
     free(goff);
     free(local_data);
-
+    /*
+    Read[i] is now free in 
+    get_coordinates_and_offset_source_and_size_and_free_reads
+    
     for ( i = 0; i < nbchr - 2; i++) {
         Read *tmp = reads[i], *next;
 
@@ -1840,12 +1996,14 @@ int main (int argc, char *argv[]) {
             tmp = next;
         }
     }
+    */
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     free(header); //ok
     free(localReadNumberByChr); //ok
-
+    if (all_disc_duplicate_offset_source) free(all_disc_duplicate_offset_source);
+    if (total_disc_duplicates) free(total_disc_duplicates);
 
     for ( i = 0; i < nbchr; i++) {
         free(chrNames[i]);

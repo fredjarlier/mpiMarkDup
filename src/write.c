@@ -48,6 +48,7 @@
 #include "createLBList.h"
 #include "log.h"
 
+
 size_t init_offset_and_size_free_chr(size_t *offset, int *size, Read *data_chr, int local_readNum) {
     size_t dataSize = 0;
     int j;
@@ -77,6 +78,7 @@ size_t init_offset_and_size_free_chr(size_t *offset, int *size, Read *data_chr, 
 }
 
 //BRUCK FUNC
+/*
 void bruckWrite(MPI_Comm comm, int rank, int num_proc,
                 size_t local_readNum, size_t *number_of_reads_by_procs, int *new_rank,
                 size_t *buffs_by_procs, char ***data2,
@@ -88,6 +90,43 @@ void bruckWrite(MPI_Comm comm, int rank, int num_proc,
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_offsets, new_rank, new_offset);
 
 }
+*/
+
+
+void bruckWrite4(MPI_Comm comm, int rank, int num_proc,
+                size_t local_readNum, size_t *number_of_reads_by_procs, int *new_rank,
+                size_t *buffs_by_procs, char ***data2,
+                size_t *new_offset, size_t ***data_offsets,
+                size_t *new_offset_source, size_t ***data_offsets_source,
+                int *new_size, int ***data_size,
+                size_t *sam_offset_source, size_t ***sam_offset) {
+
+    bruck_reads(comm, rank, num_proc, buffs_by_procs, *data2);
+    bruck_size(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_size, new_rank, new_size);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_offsets, new_rank, new_offset);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_offsets_source, new_rank, new_offset_source);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *sam_offset, new_rank, sam_offset_source);
+    
+}
+
+void bruckWrite(MPI_Comm comm, int rank, int num_proc,
+                size_t local_readNum, size_t *number_of_reads_by_procs, int *new_rank,
+                size_t *buffs_by_procs, char ***data2,
+                size_t *new_offset, size_t ***data_offsets,
+                size_t *new_offset_source, size_t ***data_offsets_source,
+                int *new_size, int ***data_size ) {
+
+    bruck_reads(comm, rank, num_proc, buffs_by_procs, *data2);
+    bruck_size(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_size, new_rank, new_size);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_offsets, new_rank, new_offset);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *data_offsets_source, new_rank, new_offset_source);
+       
+}
+
+
+
+
+
 
 void bruckWrite2(
     MPI_Comm comm,
@@ -663,7 +702,9 @@ void writeSam(
     char *data,
     size_t start_offset_in_file,
     size_t previous_local_readNum,
-    size_t final_local_readNum
+    size_t final_local_readNum,
+    size_t *disc_dup_offset_source,
+    size_t *disc_dup_number
 ) {
 
 
@@ -777,6 +818,14 @@ void writeSam(
 
     fprintf(stderr, "Rank %d :::::[WRITE][PHASE 1] check first char before bitonic 1 passed\n", rank, k);
     MPI_Barrier(COMM_WORLD);
+    */
+    /*
+     for ( m = 0; m < local_readNum; m++){
+
+        fprintf(stderr, "[WRITE][BEFORE BITONIC] pbs_offset_source_phase1[%zu] = %zu \n", m, pbs_offset_source_phase1[m]);
+
+
+     }
     */
 
     // we sort source offsets
@@ -970,6 +1019,8 @@ void writeSam(
 
     time_count = MPI_Wtime();
 
+
+
     bruckWrite2(
         split_comm,
         rank,
@@ -1045,17 +1096,21 @@ void writeSam(
     qksort(coord_index, previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
 
     int *new_local_reads_sizes_sorted_bruck2        	= malloc(previous_local_readNum * sizeof(int));
-    int *new_local_reads_dest_rank_sorted_bruck2      = malloc(previous_local_readNum * sizeof(int));
+    int *new_local_reads_dest_rank_sorted_bruck2        = malloc(previous_local_readNum * sizeof(int));
     size_t *new_local_offset_destination_bruck2     	= malloc(previous_local_readNum * sizeof(size_t));
-    size_t *new_local_offset_source_sorted_bruck2     = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_local_offset_source_sorted_bruck2       = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_sam_offset_source_sorted_bruck2         = malloc(previous_local_readNum * sizeof(size_t));
+
 
     //We index data
     for (j = 0; j < previous_local_readNum; j++) {
 
         new_local_reads_sizes_sorted_bruck2[j]           	= new_local_reads_sizes_sorted_bruck[coord_index[j]];
-        new_local_reads_dest_rank_sorted_bruck2[j]      = new_local_reads_dest_rank_sorted_bruck[coord_index[j]];
+        new_local_reads_dest_rank_sorted_bruck2[j]          = new_local_reads_dest_rank_sorted_bruck[coord_index[j]];
         new_local_offset_destination_bruck2 [j]         	= new_local_offset_destination_bruck[coord_index[j]];
         new_local_offset_source_sorted_bruck2[j]        	= new_local_offset_source_sorted_bruck[coord_index[j]];
+        new_sam_offset_source_sorted_bruck2[j]              = new_local_offset_source_sorted_bruck[coord_index[j]];
+    
     }
 
     free(new_local_offset_source_sorted_bruck);
@@ -1143,7 +1198,7 @@ void writeSam(
         }
     }
 
-    free(new_local_offset_source_sorted_bruck2);
+    
     int res;
 
     /*
@@ -1245,9 +1300,10 @@ void writeSam(
     /****************************
      *  BEGIN BRUCK PHASE       *
      *****************************/
-
-    size_t **data_offsets = malloc(sizeof(size_t *) * num_proc);
-    int **data_size       = malloc(sizeof(int *) * num_proc);
+    size_t **data_offsets_sources           = malloc(sizeof(size_t *) * num_proc);
+    size_t **data_sam_offsets_sources       = malloc(sizeof(size_t *) * num_proc);
+    size_t **data_offsets                   = malloc(sizeof(size_t *) * num_proc);
+    int **data_size                         = malloc(sizeof(int *) * num_proc);
 
     time_count = MPI_Wtime();
 
@@ -1258,8 +1314,8 @@ void writeSam(
     }
 
     assert( count6 == previous_local_readNum );
-
-    bruckWrite(
+    
+    bruckWrite4(
         split_comm,
         rank,
         num_proc,
@@ -1270,9 +1326,14 @@ void writeSam(
         &data2,
         new_local_offset_destination_bruck2,
         &data_offsets,
+        new_local_offset_source_sorted_bruck2,
+        &data_offsets_sources,
         new_local_reads_sizes_sorted_bruck2,
-        &data_size
+        &data_size,
+        new_sam_offset_source_sorted_bruck2,
+        &data_sam_offsets_sources
     );
+
 
     //if (rank == master_job_phase_1) {
     //    fprintf(stderr, "Rank %d :::::[WRITE][BRUCK] Time   = %f s \n", rank, MPI_Wtime() - time_count);
@@ -1295,6 +1356,8 @@ void writeSam(
     free(new_local_reads_sizes_sorted_bruck2);
     free(new_local_offset_destination_bruck2);
     free(new_local_reads_dest_rank_sorted_bruck2);
+    free(new_local_offset_source_sorted_bruck2);
+
     malloc_trim(0);
 
     size_t sum_num_of_reads = 0;
@@ -1309,11 +1372,35 @@ void writeSam(
 
     previous_local_readNum = final_local_readNum;
 
-    size_t *new_offset_dest_index_phase3     = malloc(sizeof(size_t) * previous_local_readNum);
-    char  **data_reads_to_sort               = malloc(previous_local_readNum * sizeof(char *));
-    size_t *data_size_to_sort                = malloc(previous_local_readNum * sizeof(size_t));
-    size_t *data_offsets_to_sort             = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_offset_dest_index_phase3            = malloc(sizeof(size_t) * previous_local_readNum);
+    char  **data_reads_to_sort                      = malloc(previous_local_readNum * sizeof(char *));
+    size_t *data_size_to_sort                       = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *data_offsets_to_sort                    = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *sam_reads_offsets_source                = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *sam_reads_offsets_source_sorted         = malloc(previous_local_readNum * sizeof(size_t));
+    /*
+        In case of discordant we send to writesame a vector with the offset of
+        all discordant read
+    */
+     
+    j = 0;
+    for (m2 = 0; m2 < num_proc; m2++) {
+        for (k = 0; k < number_of_reads_by_procs[m2]; k++) {
+            sam_reads_offsets_source [k + j] = data_offsets_sources[m2][k];
+        }
 
+        free(data_sam_offsets_sources[m2]);
+        free(data_offsets_sources[m2]);
+        
+        j += number_of_reads_by_procs[m2];
+    }
+
+    assert(j == final_local_readNum);
+    
+   
+    if (data_sam_offsets_sources !=NULL) free(data_sam_offsets_sources);
+    if (data_offsets_sources !=NULL) free(data_offsets_sources);
+    
     /*
      * GET DATA AFTER BRUCK
      *
@@ -1330,6 +1417,7 @@ void writeSam(
 
             data_size_to_sort[k + j] = data_size[m2][k];
             data_offsets_to_sort[k + j] = data_offsets[m2][k];
+            
         }
 
         free(data_size[m2]);
@@ -1389,7 +1477,10 @@ void writeSam(
 
     for (k = 0; k < previous_local_readNum; k++) {
         size_t_buffer_uncompressed += data_size_to_sort[new_offset_dest_index_phase3[k]];
+        sam_reads_offsets_source_sorted[k] = sam_reads_offsets_source[new_offset_dest_index_phase3[k]];
     }
+
+    free(sam_reads_offsets_source);
 
     char *char_buff_uncompressed = malloc(size_t_buffer_uncompressed * sizeof(char) + 1);
     char_buff_uncompressed[size_t_buffer_uncompressed] = 0;
@@ -1409,35 +1500,29 @@ void writeSam(
     free(data_reads_to_sort);
 
 
-    /*
-     * FOR DEBUG
-     *
-     *
-   if (rank == 7){
-		char *p101 = char_buff_uncompressed +size_t_buffer_uncompressed - 500;                
-                 fprintf(stderr, "rank %d :::::[MPISORT] last lines %s  \n", rank, p101 );
-	} 
-
-      if (rank == 8){
-		char *p102 = char_buff_uncompressed;
-		int count001 = 0;                
-                fprintf(stderr, "rank %d :::::[MPISORT] first lines =", rank );
-		while (count001 < 1500){fprintf(stderr, "%c", *p102 ); p102++; count001++;}
-	} 
-    */
-    //fprintf(stderr, "rank %d :::::[MPISORT]  char_buff_uncompressed = %s  \n", rank, char_buff_uncompressed);
+    //
     
     char *char_buff_uncompressed_with_duplicates = NULL;
-    if ( strcmp(chrName, "discordant") == 0 )
-        char_buff_uncompressed_with_duplicates = markDuplicateDiscordant (char_buff_uncompressed, 
+   
+    /*
+        for (size_t u = 0; u < previous_local_readNum; u++)
+            fprintf(stderr, "BEFORE MARKDUP]  sam_reads_offsets_source[%zu] = %zu  \n", u, sam_reads_offsets_source[u]);
+    */
+
+    char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, 
                                                             previous_local_readNum, 
                                                             header, 
-                                                            split_comm);
-    else  
-        char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, 
-                                                            previous_local_readNum, 
-                                                            header, 
-                                                            split_comm);
+                                                            split_comm,
+                                                            sam_reads_offsets_source_sorted, 
+                                                            disc_dup_offset_source,
+                                                            disc_dup_number);
+    
+
+
+    MPI_Barrier(split_comm);
+
+    //if (buff_reads_offsets_source) free(buff_reads_offsets_source);
+
 
     /** COMPRESSION PART * */
 
@@ -1712,9 +1797,1113 @@ void writeSam(
     free(y);
     free(y2);
     malloc_trim(0);
+   
 }
 
-void writeSam_discordant_and_unmapped(
+size_t * writeSam_discordant(
+    int rank,
+    char *output_dir,
+    char *header,
+    size_t local_readNum,
+    char *chrName,
+    int total_num_proc,  //this is the number of proc in split communication
+    MPI_Comm split_comm,
+    int master_rank,
+    MPI_Info finfo,
+    int compression_level,
+    size_t *offset_dest_phase1,
+    size_t *offset_source_phase1,
+    int *read_size_phase1,
+    int *dest_rank_phase1,
+    // use when redistribute the reads according to original rank
+    // when sorting of offset sources is done
+    int *source_rank_phase1,
+    char *data,
+    size_t start_offset_in_file,
+    size_t previous_local_readNum,
+    size_t final_local_readNum,
+    size_t *disc_dup_number
+) {
+
+
+    /*
+     * This section is divided in 4 steps
+     *
+     * First step:
+     *
+     * To accelerate the writing the output are written in blocks. Each rank is going to write a block of contiguous reads.
+     * To do that we sort the offset destinations and gives a new rank to contigues read.
+     *
+     * Second step:
+     *
+     * Now read the reads. The reading is done in contiguous blocks.
+     * So we sort the offsets sources before reading the reads
+     *
+     * Third step:
+     *
+     * The shuffle of the read according to the offset destinations
+     * The shuffle is optimized with Bruck method.
+     *
+     * Fourth step:
+     *
+     * The writing.
+     *
+     */
+
+    size_t j;
+    size_t k;
+    int ierr;
+
+    int master_job_phase_1 = master_rank;
+    int master_job_phase_2 = master_rank;
+
+ 
+    MPI_Status status;
+
+    /*
+     * phase 1 variables
+     */
+
+    size_t *pbs_offset_dest_phase1;   // resized vector for all vectors in bitonic are same size
+    size_t *pbs_offset_source_phase1;
+    int *pbs_read_size_phase1;
+    int *pbs_dest_rank_phase1;
+    int *pbs_orig_rank_off_phase1;
+
+    /*
+     * variables for first Bruck
+     */
+
+    size_t *new_pbs_offset_source_phase1    = NULL;
+    size_t *new_pbs_offset_dest_phase1      = NULL;
+    int    *new_pbs_read_size_phase1        = NULL;
+    int    *new_pbs_dest_rank_phase1        = NULL;
+    int    *new_pbs_orig_rank_off_phase1    = NULL;
+
+    //size_t *local_offset_destination_bruck;       
+    
+    //variables for the writing part
+
+    //variables for MPI writes and read
+    MPI_File out;
+    char *path;
+    double time_count;
+    //The data in which what we read will be kept
+    char **data2 = malloc( total_num_proc * sizeof(char *));
+
+    int dimensions = total_num_proc;
+
+    size_t max_num_read = 0;
+    MPI_Allreduce(&local_readNum, &max_num_read, 1, MPI_LONG_LONG_INT, MPI_MAX, split_comm);
+
+    pbs_offset_dest_phase1   = calloc(max_num_read, sizeof(size_t));
+    pbs_offset_source_phase1 = calloc(max_num_read, sizeof(size_t));
+    pbs_orig_rank_off_phase1 = calloc(max_num_read, sizeof(size_t));
+    pbs_read_size_phase1     = calloc(max_num_read, sizeof(int));
+    pbs_dest_rank_phase1     = calloc(max_num_read, sizeof(int));
+
+    size_t m = 0;
+    int m2 = 0;
+    //we fill up the pbs vector
+    for (m = 0; m < local_readNum; m++) {
+        pbs_offset_dest_phase1[m]   = offset_dest_phase1[m];
+        pbs_offset_source_phase1[m] = offset_source_phase1[m];
+        pbs_read_size_phase1[m]     = read_size_phase1[m];
+        pbs_dest_rank_phase1[m]     = dest_rank_phase1[m];
+        pbs_orig_rank_off_phase1[m] = source_rank_phase1[m];
+    }
+
+    free(offset_dest_phase1);
+    free(offset_source_phase1);
+    free(read_size_phase1);
+    free(dest_rank_phase1);
+    free(source_rank_phase1);
+
+    /*
+     *
+     * CHECK OFFSET FOR DEBUG
+     *
+     * We check offset by reading the first character
+     * of the read in the SAM file
+     *
+    for ( m = 0; m < local_readNum; m++){
+        size_t offset_to_test = pbs_offset_source_phase1[m];
+        char *buff_test = malloc(sizeof(char));
+        buff_test[1] = 0;
+        MPI_File_read_at(in, offset_to_test, buff_test, 1, MPI_CHAR, &status);
+        assert( *buff_test == 'H' );
+    }
+
+    fprintf(stderr, "Rank %d :::::[WRITE][PHASE 1] check first char before bitonic 1 passed\n", rank, k);
+    MPI_Barrier(COMM_WORLD);
+    */
+
+    // we sort source offsets
+    time_count = MPI_Wtime();
+    ParallelBitonicSort2(
+        split_comm,
+        rank,
+        dimensions,
+        pbs_offset_source_phase1,
+        pbs_read_size_phase1,
+        pbs_dest_rank_phase1,
+        pbs_offset_dest_phase1,
+        pbs_orig_rank_off_phase1,
+        max_num_read
+    );
+
+    MPI_Barrier(split_comm);
+
+    //if (rank == master_job_phase_1) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][BITONIC 2] Time spent sorting sources offsets = %f\n", rank,  MPI_Wtime() - time_count);
+    //}
+
+    md_log_rank_debug(master_job_phase_1, "[WRITE][BITONIC 2] Time spent sorting sources offsets = %f\n",  MPI_Wtime() - time_count);
+
+    /*
+     *
+     * FOR DEBUG
+     *
+     *
+
+    for(j = 1; j < max_num_read; j++){
+        assert(pbs_offset_source_phase1[j-1] <= pbs_offset_source_phase1[j]);
+        assert(pbs_dest_rank_phase1[j] < dimensions);
+        assert(pbs_orig_rank_off_phase1[j] < dimensions);
+    }
+    */
+
+    /*
+     *
+     * CHECK OFFSET
+     *
+     * We check offset by reading the first character
+     * of the read in the SAM file
+     *
+
+    for ( m = 0; m < local_readNum; m++){
+
+        if ( pbs_offset_source_phase1[m] > 0 ){
+            size_t offset_to_test = pbs_offset_source_phase1[m];
+            char *buff_test = malloc(sizeof(char));
+            buff_test[1] = 0;
+            MPI_File_read_at(in, offset_to_test, buff_test, 1, MPI_CHAR, &status);
+            assert( *buff_test == 'H' );
+        }
+
+    }
+    fprintf(stderr, "Rank %d :::::[WRITE][PHASE 1] check first char after bitonic 2 passed\n", rank, k);
+    MPI_Barrier(COMM_WORLD);
+
+    */
+
+    /*
+     * REMOVE ZERO PADDING BEFORE BRUCK
+     *
+     */
+
+
+    size_t tmp2 = 0;
+
+    for (j = 0; j < max_num_read; j++) {
+        if (pbs_read_size_phase1[j] == 0) {
+            tmp2++;
+        }
+    }
+
+    MPI_Barrier(split_comm);
+
+    size_t num_read_for_bruck = 0;
+    local_readNum = max_num_read;
+
+    if ( tmp2 < max_num_read ) {
+        //don't malloc!!
+        new_pbs_offset_source_phase1    = calloc( (local_readNum - tmp2), sizeof(size_t));
+        new_pbs_offset_dest_phase1      = calloc( (local_readNum - tmp2), sizeof(size_t));
+        new_pbs_read_size_phase1        = calloc( (local_readNum - tmp2), sizeof(int));
+        new_pbs_dest_rank_phase1        = calloc( (local_readNum - tmp2), sizeof(int));
+        new_pbs_orig_rank_off_phase1    = calloc( (local_readNum - tmp2), sizeof(int));
+
+        for (j = 0; j < (local_readNum - tmp2); j++) {
+            new_pbs_offset_source_phase1[j] = pbs_offset_source_phase1[j + tmp2];
+            new_pbs_read_size_phase1[j]     = pbs_read_size_phase1[j + tmp2];
+            new_pbs_dest_rank_phase1[j]     = pbs_dest_rank_phase1[j + tmp2];
+            new_pbs_orig_rank_off_phase1[j] = pbs_orig_rank_off_phase1[j + tmp2];
+            new_pbs_offset_dest_phase1[j]   = pbs_offset_dest_phase1[j + tmp2];
+        }
+
+        /*
+         *
+         * FOR DEBUG
+         *
+        for (j = 0; j < (local_readNum - tmp2); j++){
+            assert(new_pbs_read_size_phase1[j]     != 0);
+            assert(new_pbs_offset_source_phase1[j] != 0);
+            assert(new_pbs_offset_dest_phase1[j]   != 0);
+            assert(new_pbs_dest_rank_phase1[j]     < dimensions);
+            assert(new_pbs_orig_rank_off_phase1[j] < dimensions);
+        }
+        */
+        num_read_for_bruck = local_readNum - tmp2;
+    }
+
+    if (tmp2 == max_num_read) {
+
+        size_t numItems = 0;
+
+        new_pbs_offset_source_phase1    = malloc(numItems * sizeof(size_t));
+        new_pbs_offset_dest_phase1      = malloc(numItems * sizeof(size_t));
+        new_pbs_read_size_phase1        = malloc(numItems * sizeof(int));
+        new_pbs_dest_rank_phase1        = malloc(numItems * sizeof(int));
+        new_pbs_orig_rank_off_phase1    = malloc(numItems * sizeof(int));
+
+        num_read_for_bruck = 0;
+    }
+
+    MPI_Barrier(split_comm);
+
+
+    free(pbs_offset_source_phase1);
+    free(pbs_read_size_phase1);
+    free(pbs_dest_rank_phase1);
+    free(pbs_orig_rank_off_phase1);
+    free(pbs_offset_dest_phase1);
+    /*
+     * Now we dipatch the vectors:
+     *      read_size,
+     *      dest_rank,
+     *      offset_dest,
+     *      offset_source
+     *
+     * according to their original ranks
+     * we do it with a Bruck
+     */
+
+    int *new_local_reads_sizes_sorted_bruck             = malloc(previous_local_readNum * sizeof(int));
+    int *new_local_reads_dest_rank_sorted_bruck         = malloc(previous_local_readNum * sizeof(int));
+    size_t *new_local_offset_destination_bruck          = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_local_offset_source_sorted_bruck        = malloc(previous_local_readNum * sizeof(size_t));
+
+    int num_proc = dimensions;
+    size_t *number_of_reads_by_procs = calloc( dimensions, sizeof(size_t));
+
+    for (m = 0; m < num_read_for_bruck; m++) {
+
+        number_of_reads_by_procs[new_pbs_orig_rank_off_phase1[m]]++;
+    }
+
+    size_t count6 = 0;
+
+    for (m2 = 0; m2 < dimensions; m2++) {
+        count6 += number_of_reads_by_procs[m2];
+    }
+
+    assert( count6 == num_read_for_bruck );
+
+
+    size_t **dest_offsets           = malloc(sizeof(size_t *) * dimensions);
+    size_t **local_source_offsets   = malloc(sizeof(size_t *) * dimensions);
+
+    int **read_size                 = malloc(sizeof(int *) * dimensions);
+    int **dest_rank                 = malloc(sizeof(int *) * dimensions);
+
+
+    /*
+     *
+     * CHECK OFFSET
+     *
+
+    for ( m = 0; m < local_readNum; m++){
+
+        if ( new_pbs_offset_source_phase1[m] > 0 ){
+            size_t offset_to_test = new_pbs_offset_source_phase1[m];
+            char *buff_test = malloc(sizeof(char));
+            buff_test[1] = 0;
+            MPI_File_read_at(in, offset_to_test, buff_test, 1, MPI_CHAR, &status);
+            assert( *buff_test == 'H' );
+        }
+    }
+    fprintf(stderr, "Rank %d :::::[WRITE][PHASE 1] check first char before bruck passed\n", rank, k);
+    MPI_Barrier(COMM_WORLD);
+    */
+
+    time_count = MPI_Wtime();
+
+    bruckWrite2(
+        split_comm,
+        rank,
+        dimensions,
+        count6,
+        number_of_reads_by_procs,
+        new_pbs_orig_rank_off_phase1,
+        new_pbs_offset_dest_phase1,
+        &dest_offsets,
+        new_pbs_dest_rank_phase1,
+        &dest_rank,
+        new_pbs_offset_source_phase1,
+        &local_source_offsets,
+        new_pbs_read_size_phase1,
+        &read_size
+    );
+
+    free(new_pbs_offset_dest_phase1);
+    free(new_pbs_offset_source_phase1);
+    free(new_pbs_read_size_phase1);
+    free(new_pbs_dest_rank_phase1);
+    free(new_pbs_orig_rank_off_phase1);
+
+    /*
+     * Now get the offset source, destination and sizes
+     */
+    MPI_Barrier(split_comm);
+
+    //if (rank == master_job_phase_1) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][BRUCK 2] Time spent in bruck  = %f\n", rank,  MPI_Wtime() - time_count);
+    //}
+    md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK 2] Time spent in bruck  = %f\n",  MPI_Wtime() - time_count);
+
+    /*
+     * GET DATA AFTER BRUCK
+     *
+     */
+
+    j = 0;
+
+    for (m2= 0; m2 < num_proc; m2++) {
+        for (k = 0; k < number_of_reads_by_procs[m2]; k++) {
+            new_local_offset_source_sorted_bruck[k + j]     = local_source_offsets[m2][k];
+            new_local_reads_dest_rank_sorted_bruck[k + j]   = dest_rank[m2][k];
+            new_local_reads_sizes_sorted_bruck[k + j]       = read_size[m2][k];
+            new_local_offset_destination_bruck[k + j]       = dest_offsets[m2][k];
+        }
+
+        free(local_source_offsets[m2]);
+        free(dest_rank[m2]);
+        free(read_size[m2]);
+        free(dest_offsets[m2]);
+        j += number_of_reads_by_procs[m2];
+
+    }
+
+    assert( j == previous_local_readNum );
+
+    for (k = 0; k < previous_local_readNum; k++) {
+        assert(new_local_offset_source_sorted_bruck[k] != 0);
+    }
+
+
+    time_count = MPI_Wtime();
+    //init indices for qksort
+    size_t *coord_index = malloc(previous_local_readNum * sizeof(size_t));
+
+    for (j = 0; j < previous_local_readNum; j++) {
+        coord_index[j] = j;
+    }
+
+    base_arr2 = new_local_offset_source_sorted_bruck;
+    qksort(coord_index, previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
+
+    int *new_local_reads_sizes_sorted_bruck2            = malloc(previous_local_readNum * sizeof(int));
+    int *new_local_reads_dest_rank_sorted_bruck2        = malloc(previous_local_readNum * sizeof(int));
+    size_t *new_local_offset_destination_bruck2         = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_local_offset_source_sorted_bruck2       = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *new_sam_offset_source_sorted_bruck2         = malloc(previous_local_readNum * sizeof(size_t));
+
+    //We index data
+    for (j = 0; j < previous_local_readNum; j++) {
+
+        new_local_reads_sizes_sorted_bruck2[j]              = new_local_reads_sizes_sorted_bruck[coord_index[j]];
+        new_local_reads_dest_rank_sorted_bruck2[j]          = new_local_reads_dest_rank_sorted_bruck[coord_index[j]];
+        new_local_offset_destination_bruck2 [j]             = new_local_offset_destination_bruck[coord_index[j]];
+        new_local_offset_source_sorted_bruck2[j]            = new_local_offset_source_sorted_bruck[coord_index[j]];
+        new_sam_offset_source_sorted_bruck2[j]              = new_local_offset_source_sorted_bruck[coord_index[j]];
+    }
+
+    free(new_local_offset_source_sorted_bruck);
+    free(new_local_reads_sizes_sorted_bruck);
+    free(new_local_offset_destination_bruck);
+    free(new_local_reads_dest_rank_sorted_bruck);
+    free(coord_index);
+
+    malloc_trim(0);
+
+    //if (rank == master_job_phase_2) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][LOCAL SORT] Time =  %f seconds\n", rank, MPI_Wtime() - time_count);
+    //}
+    md_log_rank_debug(master_job_phase_2, "[WRITE][LOCAL SORT] Time =  %f seconds\n", MPI_Wtime() - time_count);
+
+    /*
+     *
+     * FOR DEBUG
+     *
+     *
+
+    for(k = 1; k < previous_local_readNum; k++)
+    {
+        assert((new_local_offset_source_sorted_bruck2[k] - start_offset_in_file) <= strlen(data));
+        assert(new_local_offset_source_sorted_bruck2[k-1]    <= new_local_offset_source_sorted_bruck2[k]);
+        assert(new_local_offset_source_sorted_bruck2[k]      != 0);
+        assert(new_local_reads_dest_rank_sorted_bruck2[k]    < dimensions);
+        assert(new_local_offset_destination_bruck2[k]        != 0);
+        assert(new_local_reads_sizes_sorted_bruck2[k]        != 0);
+    }
+     */
+
+    if (dest_rank != NULL) {
+        free(dest_rank);
+    }
+
+    if (read_size != NULL) {
+        free(read_size);
+    }
+
+    if (dest_offsets != NULL) {
+        free(dest_offsets);
+    }
+
+    if (local_source_offsets != NULL) {
+        free(local_source_offsets);
+    }
+
+    /*
+     *
+     * PACKING OF THE DATA
+     *
+     */
+
+    size_t i;
+    size_t new_data_sz = 0;
+    char *data_pack;
+    
+    //we compute the size of data_pack
+    for (k = 0; k < previous_local_readNum; k++) {
+        new_data_sz += new_local_reads_sizes_sorted_bruck2[k];
+    }
+
+    data_pack = malloc(new_data_sz + 1);
+    data_pack[new_data_sz] = 0;
+
+    char *q = data;
+    char *p = data_pack;
+    size_t offset_in_data = 0;
+    int pos = 0;
+
+    MPI_Barrier(split_comm);
+
+    //we copy elements from data in data_pack
+    for (k = 0; k < (previous_local_readNum); k++) {
+        pos = 0;
+        offset_in_data = new_local_offset_source_sorted_bruck2[k] - start_offset_in_file;
+        q = data + offset_in_data;
+
+        while (*q && (pos < new_local_reads_sizes_sorted_bruck2[k])) {
+            *p = *q;
+            q++;
+            p++;
+            pos++;
+        }
+    }
+
+    
+    int res;
+
+    /*
+     * We unpack in a loop the same way
+     */
+
+    MPI_Datatype dt_data;
+    time_count = MPI_Wtime();
+    //The data in which what we read will be kept
+    // we compute the size of
+    // data for each rank and we put it in
+    // buffs and buffs_by_proc is
+    // the size of the buffer to send
+
+    size_t *buffs_by_procs2 = calloc( dimensions, sizeof(size_t));
+    size_t *buffs_by_procs  = calloc( dimensions, sizeof(size_t));
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        number_of_reads_by_procs[m2] = 0;
+    }
+
+    for (m = 0; m < previous_local_readNum; m++) {
+        buffs_by_procs2[new_local_reads_dest_rank_sorted_bruck2[m]] += new_local_reads_sizes_sorted_bruck2[m];
+        number_of_reads_by_procs[new_local_reads_dest_rank_sorted_bruck2[m]]++;
+    }
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        buffs_by_procs[(rank + m2) % num_proc] = buffs_by_procs2[(rank - m2 + num_proc) % num_proc];
+    }
+
+    free(buffs_by_procs2);
+
+    //Allocate data and initialization
+    for (m2 = 0; m2 < num_proc; m2++) {
+        data2[m2] = (char *)malloc(buffs_by_procs[m2] * sizeof(char) + 1);
+        data2[m2][buffs_by_procs[m2]] = 0;
+    }
+
+    //Variable for datatype struct
+    MPI_Aint *indices       = malloc(previous_local_readNum * sizeof(MPI_Aint));
+    int *blocklens          = malloc(previous_local_readNum * sizeof(int));
+    MPI_Datatype *oldtypes  = malloc(previous_local_readNum * sizeof(MPI_Datatype));
+
+    MPI_Aint adress_to_write_in_data_by_element[num_proc];
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        MPI_Get_address(data2[(rank - m2 + num_proc) % num_proc], &adress_to_write_in_data_by_element[(rank + m2) % num_proc]);
+    }
+
+    for (i = 0; i < previous_local_readNum; i++) {
+        indices[i] = adress_to_write_in_data_by_element[new_local_reads_dest_rank_sorted_bruck2[i]];
+        assert (indices[i] != (MPI_Aint)NULL);
+        adress_to_write_in_data_by_element[new_local_reads_dest_rank_sorted_bruck2[i]] += new_local_reads_sizes_sorted_bruck2[i];
+        blocklens[i] = new_local_reads_sizes_sorted_bruck2[i];
+        oldtypes[i] = MPI_CHAR;
+    }
+
+    //Create struct
+    MPI_Type_create_struct(previous_local_readNum, blocklens, indices, oldtypes, &dt_data);
+    MPI_Type_commit(&dt_data);
+    pos = 0;
+    res = MPI_Unpack(data_pack, new_data_sz, &pos, MPI_BOTTOM, 1, dt_data, split_comm);
+    assert(res == MPI_SUCCESS);
+    MPI_Type_free(&dt_data);
+
+    free(data_pack);
+    free(blocklens);
+    free(indices);
+    free(oldtypes);
+
+    malloc_trim(0);
+
+    //if (rank == master_job_phase_2) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][DATA PACK] Time =  %f seconds\n", rank, MPI_Wtime() - time_count);
+    //}
+    md_log_rank_debug(master_job_phase_2, "[WRITE][DATA PACK] Time =  %f seconds\n", MPI_Wtime() - time_count);
+
+    /*
+     *  In this part we are going to send the data
+     *  buffer according to the rank it belong
+     *  and in the sorted order
+     *
+     *  variable we have are:
+     *
+     *      1) data the buffer = hold the reads
+     *      2) new_rank_sorted_phase2 vector = hold the rank of the reads
+     *      3) new_offset_dest_sorted_phase2 = hold the offsets of the in the destination file
+     *      4) new_read_size_sorted_phase2 = hold the size of the reads
+     *
+     *
+     *
+     *  The strategy is :
+     *      1) we loop the rank
+     *      2) each rank send to the target rank how much data it's going to send. In order to prepare buffers
+     *      3) for each rank we create datatype of buffered data, read size, and offset
+     *      4) the taget rank recieve the buffered data, the reads size, and the offset vector
+     */
+
+    /****************************
+     *  BEGIN BRUCK PHASE       *
+     *****************************/
+    size_t **data_offsets_sources           = malloc(sizeof(size_t *) * num_proc);
+    size_t **data_offsets                   = malloc(sizeof(size_t *) * num_proc);
+    size_t **sam_offsets_sources            = malloc(sizeof(size_t *) * num_proc);
+    int **data_size                         = malloc(sizeof(int *) * num_proc);
+
+    time_count = MPI_Wtime();
+
+    count6 = 0;
+
+    for (m2 = 0; m2 < dimensions; m2++) {
+        count6 += number_of_reads_by_procs[m2];
+    }
+
+    assert( count6 == previous_local_readNum );
+    
+    bruckWrite4(
+        split_comm,
+        rank,
+        num_proc,
+        previous_local_readNum,
+        number_of_reads_by_procs,
+        new_local_reads_dest_rank_sorted_bruck2,
+        buffs_by_procs,
+        &data2,
+        new_local_offset_destination_bruck2,
+        &data_offsets,
+        new_local_offset_source_sorted_bruck2,
+        &data_offsets_sources,
+        new_local_reads_sizes_sorted_bruck2,
+        &data_size,
+        new_sam_offset_source_sorted_bruck2,
+        &sam_offsets_sources
+
+    );
+
+
+    //if (rank == master_job_phase_1) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][BRUCK] Time   = %f s \n", rank, MPI_Wtime() - time_count);
+    //}
+    md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] Time   = %f s \n", MPI_Wtime() - time_count);
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        size_t buff_test  = strlen(data2[m2]);
+        size_t buff_test2 = 0;
+        size_t u = 0;
+
+        for (u = 0; u < number_of_reads_by_procs[m2]; u++) {
+            buff_test2 += data_size[m2][u];
+        }
+
+        assert (buff_test2 == buff_test);
+    }
+
+    free(buffs_by_procs);
+    free(new_local_reads_sizes_sorted_bruck2);
+    free(new_local_offset_destination_bruck2);
+    free(new_local_reads_dest_rank_sorted_bruck2);
+    free(new_local_offset_source_sorted_bruck2);
+    free(new_sam_offset_source_sorted_bruck2);
+
+    malloc_trim(0);
+
+    size_t sum_num_of_reads = 0;
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        sum_num_of_reads += number_of_reads_by_procs[m2];
+    }
+    //md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] sum_num_of_reads   = %zu s \n", sum_num_of_reads);
+    //md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] previous_local_readNum   = %zu s \n", previous_local_readNum);
+    //md_log_rank_debug(master_job_phase_1, "[WRITE][BRUCK] final_local_readNum   = %zu s \n", final_local_readNum);
+    assert(final_local_readNum == sum_num_of_reads);
+
+    previous_local_readNum = final_local_readNum;
+
+    size_t *new_offset_dest_index_phase3     = malloc(previous_local_readNum * sizeof(size_t));
+    char  **data_reads_to_sort               = malloc(previous_local_readNum * sizeof(char *));
+    size_t *data_size_to_sort                = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *data_offsets_to_sort             = malloc(previous_local_readNum * sizeof(size_t));
+    size_t *buff_reads_offsets_source        = malloc(previous_local_readNum * sizeof(size_t));
+
+    /*
+        In case of discordant we send to writesame a vector with the offset of
+        all discordant read
+    */
+   
+    j = 0;
+    for (m2 = 0; m2 < num_proc; m2++) {
+        for (k = 0; k < number_of_reads_by_procs[m2]; k++) {
+            buff_reads_offsets_source [k + j] = sam_offsets_sources[m2][k];
+        }
+        free(sam_offsets_sources[m2]);
+
+        j += number_of_reads_by_procs[m2];
+    }
+
+    assert(j == final_local_readNum);
+    if (sam_offsets_sources !=NULL) free(sam_offsets_sources);
+    
+    /*
+     * GET DATA AFTER BRUCK
+     *
+     */
+
+    j = 0;
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        int i = 0;
+
+        for (k = 0; k < number_of_reads_by_procs[m2]; k++) {
+            data_reads_to_sort[k + j] = &(data2[m2][i]);
+            i += data_size[m2][k];
+
+            data_size_to_sort[k + j] = data_size[m2][k];
+            data_offsets_to_sort[k + j] = data_offsets[m2][k];
+            
+        }
+
+        free(data_size[m2]);
+        free(data_offsets[m2]);
+        j += number_of_reads_by_procs[m2];
+    }
+
+    assert(j == final_local_readNum);
+
+    /*
+     *
+     * FOR DEBUG
+     *
+     *
+
+    for ( k = 0; k < previous_local_readNum; k++){
+        assert (data_size_to_sort != 0);
+        assert( data_offsets_to_sort != 0);
+    }
+     */
+
+    if (data_offsets != NULL) {
+        free(data_offsets);
+    }
+
+    if (data_size != NULL) {
+        free(data_size);
+    }
+
+    free(number_of_reads_by_procs);
+
+    /*
+     * SORT LOCALY OFFSET DESTINATION BEFORE WRITING
+     *
+     */
+
+    for (k = 0; k < previous_local_readNum; k++) {
+        new_offset_dest_index_phase3[k] = k;
+    }
+
+    //task SORT OFFSET DESTINATION
+    //now we sort new_offset_dest_phase2
+
+
+    base_arr2 = data_offsets_to_sort;
+    qksort(new_offset_dest_index_phase3, previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
+
+    size_t *offsets_sorted = malloc(sizeof(size_t) * previous_local_readNum);
+
+    for (k = 0; k < previous_local_readNum; k++) {
+        offsets_sorted[k] = data_offsets_to_sort[new_offset_dest_index_phase3[k]];
+    }
+
+    free(data_offsets_to_sort);
+
+    size_t size_t_buffer_uncompressed = 0;
+
+    for (k = 0; k < previous_local_readNum; k++) {
+        size_t_buffer_uncompressed += data_size_to_sort[new_offset_dest_index_phase3[k]];
+    }
+
+    char *char_buff_uncompressed = malloc(size_t_buffer_uncompressed * sizeof(char) + 1);
+    char_buff_uncompressed[size_t_buffer_uncompressed] = 0;
+    char *p1 = char_buff_uncompressed;
+    size_t q1 = 0;
+
+    for (k = 0; k < previous_local_readNum; k++) {
+        while ( q1 < data_size_to_sort[new_offset_dest_index_phase3[k]]) {
+            *p1++ = *data_reads_to_sort[new_offset_dest_index_phase3[k]]++;
+            q1++;
+        }
+
+        q1 = 0;
+    }
+
+    free(new_offset_dest_index_phase3);
+    free(data_reads_to_sort);
+
+
+    //fprintf(stderr, "rank %d :::::[MPISORT]  char_buff_uncompressed = %s  \n", rank, char_buff_uncompressed);
+    
+    char *char_buff_uncompressed_with_duplicates = NULL;
+    size_t *disc_dup_offset_source = NULL;
+
+    char_buff_uncompressed_with_duplicates = markDuplicateDiscordant (char_buff_uncompressed, 
+                                                            previous_local_readNum, 
+                                                            header, 
+                                                            split_comm,
+                                                            buff_reads_offsets_source,
+                                                            &disc_dup_offset_source,
+                                                            disc_dup_number);
+    
+
+    MPI_Barrier(split_comm);
+
+    //if (buff_reads_offsets_source) free(buff_reads_offsets_source);
+
+
+    /** COMPRESSION PART * */
+
+    time_count = MPI_Wtime();
+
+    BGZF *fp;
+    fp = calloc(1, sizeof(BGZF));
+    int block_length = MAX_BLOCK_SIZE;
+    int bytes_written;
+    int length = strlen(char_buff_uncompressed_with_duplicates);
+
+    fp->open_mode = 'w';
+    fp->uncompressed_block_size = MAX_BLOCK_SIZE;
+    fp->uncompressed_block = malloc(MAX_BLOCK_SIZE);
+    fp->compressed_block_size = MAX_BLOCK_SIZE;
+    fp->compressed_block = malloc(MAX_BLOCK_SIZE);
+    fp->cache_size = 0;
+    fp->cache = kh_init(cache);
+    fp->block_address = 0;
+    fp->block_offset = 0;
+    fp->block_length = 0;
+    fp->compress_level = compression_level < 0 ? Z_DEFAULT_COMPRESSION : compression_level; // Z_DEFAULT_COMPRESSION==-1
+
+    if (fp->compress_level > 9) {
+        fp->compress_level = Z_DEFAULT_COMPRESSION;
+    }
+
+    const bgzf_byte_t *input = (void *)char_buff_uncompressed_with_duplicates;
+    int compressed_size = 0;
+
+    if (fp->uncompressed_block == NULL) {
+        fp->uncompressed_block = malloc(fp->uncompressed_block_size);
+    }
+
+    input = (void *)char_buff_uncompressed_with_duplicates;
+    block_length = fp->uncompressed_block_size;
+    bytes_written = 0;
+    uint8_t *compressed_buff =  malloc(strlen(char_buff_uncompressed_with_duplicates) * sizeof(uint8_t));
+
+    //if (rank == master_job_phase_2) {
+    //    fprintf(stderr, "rank %d :::: start loop compression \n", rank);
+    //}
+    md_log_rank_debug(master_job_phase_2, "start loop compression \n");
+
+
+    while (bytes_written < length) {
+        int copy_length = bgzf_min(block_length - fp->block_offset, length - bytes_written);
+        bgzf_byte_t *buffer = fp->uncompressed_block;
+        memcpy(buffer + fp->block_offset, input, copy_length);
+        fp->block_offset += copy_length;
+        input += copy_length;
+        bytes_written += copy_length;
+
+        //if (fp->block_offset == block_length) {
+        //we copy in a temp buffer
+        while (fp->block_offset > 0) {
+            int block_length;
+            block_length = deflate_block(fp, fp->block_offset);
+
+            //is it necessary?
+            //if (block_length < 0) break;
+
+            // count = fwrite(fp->compressed_block, 1, block_length, fp->file);
+            // we replace the fwrite with a memcopy
+            memcpy(compressed_buff + compressed_size, fp->compressed_block, block_length);
+            compressed_size += block_length;
+            fp->block_address += block_length;
+        }
+
+        //}
+    }
+
+    BGZF *fp_header;
+    fp_header = calloc(1, sizeof(BGZF));
+    uint8_t *compressed_header = NULL;
+    int compressed_size_header = 0;
+
+    if (rank == 0) {
+
+        int block_length = MAX_BLOCK_SIZE;
+        int bytes_written;
+        int length = strlen(header);
+
+        fp_header->open_mode = 'w';
+        fp_header->uncompressed_block_size = MAX_BLOCK_SIZE;
+        fp_header->uncompressed_block = malloc(MAX_BLOCK_SIZE);
+        fp_header->compressed_block_size = MAX_BLOCK_SIZE;
+        fp_header->compressed_block = malloc(MAX_BLOCK_SIZE);
+        fp_header->cache_size = 0;
+        fp_header->block_address = 0;
+        fp_header->block_offset = 0;
+        fp_header->block_length = 0;
+        fp_header->compress_level = compression_level < 0 ? Z_DEFAULT_COMPRESSION : compression_level; // Z_DEFAULT_COMPRESSION==-1
+
+        if (fp_header->compress_level > 9) {
+            fp_header->compress_level = Z_DEFAULT_COMPRESSION;
+        }
+
+
+        const bgzf_byte_t *input = (void *)header;
+
+
+        if (fp_header->uncompressed_block == NULL) {
+            fp_header->uncompressed_block = malloc(fp_header->uncompressed_block_size);
+        }
+
+        input = (void *)header;
+        block_length = fp_header->uncompressed_block_size;
+        bytes_written = 0;
+        compressed_header =  malloc(strlen(char_buff_uncompressed_with_duplicates) * sizeof(uint8_t));
+
+        while (bytes_written < length) {
+            int copy_length = bgzf_min(block_length - fp_header->block_offset, length - bytes_written);
+            bgzf_byte_t *buffer = fp_header->uncompressed_block;
+            memcpy(buffer + fp_header->block_offset, input, copy_length);
+            fp_header->block_offset += copy_length;
+            input += copy_length;
+            bytes_written += copy_length;
+
+            //if (fp->block_offset == block_length) {
+            //we copy in a temp buffer
+            while (fp_header->block_offset > 0) {
+                int block_length;
+                block_length = deflate_block(fp_header, fp_header->block_offset);
+
+                //is it necessary?
+                //if (block_length < 0) break;
+
+                // count = fwrite(fp->compressed_block, 1, block_length, fp->file);
+                // we replace the fwrite with a memcopy
+                memcpy(compressed_header + compressed_size_header, fp_header->compressed_block, block_length);
+                compressed_size_header += block_length;
+                fp_header->block_address += block_length;
+            }
+
+            //}
+        }
+    }
+
+    kh_destroy(cache, fp->cache);
+    free(char_buff_uncompressed_with_duplicates);
+    size_t compSize = compressed_size;
+
+    //if (rank == master_job_phase_2) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][COMPRESSION] Time for compressing %f seconds \n", rank, MPI_Wtime() - time_count);
+    //}
+
+    md_log_rank_debug(master_job_phase_2, "[WRITE][COMPRESSION] Time for compressing %f seconds \n", rank, MPI_Wtime() - time_count);
+
+
+    /*
+     * We write results of compression
+     */
+
+    size_t write_offset = 0;
+
+    MPI_Offset *y  = (MPI_Offset *) calloc(num_proc, sizeof(MPI_Offset));
+    MPI_Offset *y2 = (MPI_Offset *) calloc(num_proc + 1, sizeof(MPI_Offset));
+
+    MPI_Gather(&compSize, 1, MPI_LONG_LONG_INT, y, 1, MPI_LONG_LONG_INT, 0, split_comm);
+
+    //now we make a cumulative sum
+    int i1 = 0;
+
+    if (rank == 0) {
+        for (i1 = 1; i1 < (num_proc + 1); i1++) {
+            y2[i1] = y[i1 - 1];
+        }
+
+        for (i1 = 1; i1 < (num_proc + 1); i1++) {
+            y2[i1] = y2[i1 - 1] + y2[i1];
+        }
+
+        for (i1 = 0; i1 < (num_proc + 1); i1++) {
+            y2[i1] = y2[i1] + write_offset + compressed_size_header;
+        }
+
+    }
+
+    MPI_Scatter(y2, 1, MPI_LONG_LONG_INT, &write_offset, 1, MPI_LONG_LONG_INT, 0, split_comm);
+    // we create the path where to write for collective write
+    path = (char *)malloc((strlen(output_dir) + strlen(chrName) + 40) * sizeof(char));
+    sprintf(path, "%s/%s.gz", output_dir, chrName);
+
+
+    //task FINE TUNING FINFO FOR WRITING OPERATIONS
+
+    MPI_Info_set(finfo, "striping_factor", "12");
+    //MPI_Info_set(finfo,"striping_unit","1610612736"); //1G striping
+    MPI_Info_set(finfo, "striping_unit", "268435456"); //256 Mo
+
+    MPI_Info_set(finfo, "nb_proc", "12");
+    MPI_Info_set(finfo, "cb_nodes", "12");
+    MPI_Info_set(finfo, "cb_block_size", "4194304"); /* 4194304 = 4 MBytes - should match FS block size */
+    //MPI_Info_set(finfo,"cb_buffer_size","1610612736"); /* 128 MBytes (Optional) */
+
+
+    ierr = MPI_File_open(split_comm, path, MPI_MODE_WRONLY  + MPI_MODE_CREATE, finfo, &out);
+
+    if (ierr) {
+        fprintf(stderr, "Rank %d failed to open %s.\nAborting.\n\n", rank, path);
+        MPI_Abort(split_comm, ierr);
+        exit(2);
+
+    } else {
+        //if (!rank) {
+        //    fprintf(stderr, "Rank %d :::::[WRITE] %s.bam successfully opened\n", rank, chrName);
+        //}
+        md_log_debug("[WRITE] %s.bam successfully opened\n", chrName);
+    }
+
+    time_count = MPI_Wtime();
+
+    if (rank == master_job_phase_2 ) {
+        //fprintf(stderr, "Proc rank %d ::: we write the header \n", rank);
+        md_log_rank_debug(master_job_phase_2, "we write the header\n");
+        MPI_File_write(out, compressed_header, compressed_size_header, MPI_BYTE, MPI_STATUS_IGNORE);
+    }
+
+    free(compressed_header);
+
+    MPI_File_set_view(out, write_offset, MPI_BYTE, MPI_BYTE, "native", finfo);
+    MPI_File_write_all(out, compressed_buff, (size_t)compSize, MPI_BYTE, &status);
+
+    //task FINE TUNING FINFO BACK TO READING OPERATIONS
+    //MPI_Info_set(finfo,"striping_factor","12");
+    //MPI_Info_set(finfo,"striping_unit","2684354560"); //1G striping
+
+    //MPI_Info_set(finfo,"nb_proc","128");
+    //MPI_Info_set(finfo,"cb_nodes","128");
+    //MPI_Info_set(finfo,"cb_block_size","2684354560"); /* 4194304 MBytes - should match FS block size */
+    //MPI_Info_set(finfo,"cb_buffer_size","2684354560"); /* 128 MBytes (Optional) */
+
+    //free(buff_compressed);
+    free(compressed_buff);
+
+    //if (rank == master_job_phase_2) {
+    //    fprintf(stderr, "Rank %d :::::[WRITE][WRITING BGZF] Time for chromosome %s writing %f seconds\n", rank, chrName, MPI_Wtime() - time_count);
+    //}
+
+    md_log_rank_debug(master_job_phase_2, "[WRITE][WRITING BGZF] Time for chromosome %s writing %f seconds\n", chrName, MPI_Wtime() - time_count);
+
+    free(fp->uncompressed_block);
+    free(fp->compressed_block);
+    free_cache(fp);
+    free(fp);
+
+    if (rank == 0) {
+        free(fp_header->uncompressed_block);
+        free(fp_header->compressed_block);
+        free_cache(fp_header);
+    }
+
+    free(fp_header);
+
+
+    MPI_File_close(&out);
+    free(path);
+
+    for (m2 = 0; m2 < num_proc; m2++) {
+        if (data2[m2]) {
+            free(data2[m2]);
+        }
+    }
+
+    if (data2) {
+        free(data2);
+    }
+
+    free(offsets_sorted);
+    free(data_size_to_sort);
+    free(y);
+    free(y2);
+    malloc_trim(0);
+
+    return disc_dup_offset_source;
+}
+
+
+
+
+
+
+
+
+void writeSam_unmapped(
     int split_rank,
     char *output_dir,
     char *header,
@@ -2102,7 +3291,9 @@ void writeSam_any_dim(
     int *new_read_size,
     int *new_rank,
     char *data,
-    size_t start_offset_in_file) {
+    size_t start_offset_in_file,
+    size_t **disc_dup_offset_source,
+    size_t *disc_dup_number) {
 
 
     /*
@@ -3536,7 +4727,7 @@ void writeSam_any_dim(
     free(blocklens);
     free(indices);
     free(oldtypes);
-    free(new_offset_source_sorted_phase2);
+    
 
     //if (rank == master_job_phase_2) {
     //    fprintf(stderr, "Rank %d :::::[WRITE_ANY_DIM][PACK] Time in packing data for bruck %f seconds\n", rank, MPI_Wtime() - time_count);
@@ -3571,8 +4762,9 @@ void writeSam_any_dim(
      *  BEGIN BRUCK PHASE       *
      *****************************/
 //task Beginning of the Bruck phase
-    size_t **data_offsets = (size_t **)malloc(sizeof(size_t *)*num_proc);
-    int **data_size = (int **)malloc(sizeof(int *)*num_proc);
+    size_t **data_offsets           = (size_t **)malloc(sizeof(size_t *)*num_proc);
+    size_t **data_offsets_source    = (size_t **)malloc(sizeof(size_t *)*num_proc);
+    int **data_size                 = (int **)malloc(sizeof(int *)*num_proc);
 
     time_count = MPI_Wtime();
 
@@ -3587,6 +4779,8 @@ void writeSam_any_dim(
         &data2,
         new_offset_dest_phase2,
         &data_offsets,
+        new_offset_source_sorted_phase2,
+        &data_offsets_source,
         new_read_size_phase2,
         &data_size
     );
@@ -3597,6 +4791,7 @@ void writeSam_any_dim(
     free(new_read_size_phase2);
     free(new_rank_phase2);
     free(new_offset_dest_phase2);
+    free(new_offset_source_sorted_phase2);
     free(new_offset_dest_index_phase2);
 
     //if (rank == master_job_phase_2) {
@@ -3753,6 +4948,8 @@ void writeSam_any_dim(
         /*
          * task: Sort before writing
          */   
+        size_t *buff_reads_offsets_source = malloc(sizeof(size_t) * local_readNum);
+        buff_reads_offsets_source[0] = 0;
 
         size_t *new_offset_dest_index_phase3 = malloc(sizeof(size_t) * local_readNum);
         //we sort the offset destination
@@ -3798,9 +4995,12 @@ void writeSam_any_dim(
         for (m = 0; m < num_proc; m++) {
             for (k = 0; k < number_of_reads_by_procs[m]; k++) {
                 data_offsets_to_sort[k + j] = data_offsets[m][k];
+                buff_reads_offsets_source[k + j] = data_offsets_source[m][k];
             }
 
             free(data_offsets[m]);
+            free(data_offsets_source[m]);
+
             j += number_of_reads_by_procs[m];
         }
 
@@ -3841,16 +5041,40 @@ void writeSam_any_dim(
         }
 
         free(new_offset_dest_index_phase3);
+        free(data_offsets_source);
         free(data_reads_to_sort);
 
         char *char_buff_uncompressed_with_duplicates = NULL;
-        char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, 
-                                                                local_readNum, 
-                                                                header, 
-                                                                split_comm_2);
+       
 
+        if ( strcmp(chrName, DISCORDANT) == 0 ){
+
+            char_buff_uncompressed_with_duplicates = markDuplicateDiscordant (char_buff_uncompressed, 
+                                                            local_readNum, 
+                                                            header, 
+                                                            split_comm_2,
+                                                            buff_reads_offsets_source,
+                                                            disc_dup_offset_source,
+                                                            disc_dup_number);
+        
+            
+
+
+        }
+
+        else{
+
+            char_buff_uncompressed_with_duplicates = markDuplicate (char_buff_uncompressed, 
+                                                            local_readNum, 
+                                                            header, 
+                                                            split_comm_2,
+                                                            buff_reads_offsets_source, 
+                                                            *disc_dup_offset_source,
+                                                            disc_dup_number);
+        }
+        
         /** COMPRESSION PART * */
-
+        MPI_Barrier(split_comm_2);
         time_count = MPI_Wtime();
 
         BGZF *fp;
@@ -3891,6 +5115,8 @@ void writeSam_any_dim(
         //    fprintf(stderr, "rank %d :::: start loop compression \n", rank);
         //}
         md_log_rank_trace(chosen_rank, "start loop compression \n");
+
+        MPI_Barrier(split_comm_2);
 
         while (bytes_written < length) {
             int copy_length = bgzf_min(block_length - fp->block_offset, length - bytes_written);

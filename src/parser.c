@@ -135,6 +135,7 @@ void parser_paired(char *localData, int rank, size_t start_offset, unsigned char
 
         //GO TO FLAG
         currentCarac = strstr(currentLine, "\t");
+
         *currentCarac = '\0';
         currentCarac++;
 
@@ -202,14 +203,29 @@ void parser_paired(char *localData, int rank, size_t start_offset, unsigned char
 
         } else if ((chr < (nbchr - 2)) && ( mchr < (nbchr - 2))) {
 
-            //we found discordant reads
-            reads[nbchr - 1]->next = malloc(sizeof(Read));
-            reads[nbchr - 1]->next->coord = coord;
-            reads[nbchr - 1]->next->quality = quality;
-            reads[nbchr - 1]->next->offset_source_file = offset_read_in_source_file;
-            reads[nbchr - 1]->next->offset = lineSize;
-            reads[nbchr - 1] = reads[nbchr - 1]->next;
-            readNumberByChr[nbchr - 1]++;
+            
+            if (quality >= threshold) {
+                
+                //we found discordant reads
+                reads[nbchr - 1]->next = malloc(sizeof(Read));
+                reads[nbchr - 1]->next->coord = coord;
+                reads[nbchr - 1]->next->quality = quality;
+                reads[nbchr - 1]->next->offset_source_file = offset_read_in_source_file;
+                reads[nbchr - 1]->next->offset = lineSize;
+                reads[nbchr - 1] = reads[nbchr - 1]->next;
+                readNumberByChr[nbchr - 1]++;
+
+                //we add it in reads[chr] too
+                //as we want to keep it in the bam
+                reads[chr]->next = malloc(sizeof(Read));
+                reads[chr]->next->coord = coord;
+                reads[chr]->next->quality = quality;
+                reads[chr]->next->offset_source_file = offset_read_in_source_file;
+                reads[chr]->next->offset = lineSize;
+                reads[chr] = reads[chr]->next;
+                readNumberByChr[chr]++;
+      
+            }
 
         } else if ((chr == '*') && ( mchr < (nbchr - 2))) {
 

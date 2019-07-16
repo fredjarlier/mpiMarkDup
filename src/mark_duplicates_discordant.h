@@ -42,10 +42,45 @@
 #include "createLBList.h"
 #include "mark_duplicates.h"
  
+readInfo *readParsingDiscordant (char *sam_buff, 
+                                Interval *intervalByProc, 
+                                size_t readIndex,
+                                size_t counter, 
+                                chrInfo *chr, 
+                                lbInfo *lb,
+                                size_t *disc_offsets_source,  
+                                MPI_Comm comm); 
+
 void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, MPI_Comm comm);
-size_t parseLibrariesDiscordant(char *bufferReads, Interval *intervalByProc, llist_t *fragList, llist_t *readEndsList, readInfo ***readArr, char ***samTokenLines, size_t readNum, size_t readIndex, chrInfo *chr, lbInfo *lb, MPI_Comm comm);
+
+size_t parseLibrariesDiscordant(char *bufferReads, 
+                                Interval *intervalByProc, 
+                                llist_t *fragList, 
+                                llist_t *readEndsList, 
+                                readInfo ***readArr, 
+                                char ***samTokenLines, 
+                                size_t readNum, 
+                                size_t readIndex, 
+                                chrInfo *chr, 
+                                lbInfo *lb, 
+                                size_t *disc_offsets_source,
+                                MPI_Comm comm);
+
 readInfo *buildReadEndsDiscordant(readInfo *read1, readInfo *read2, llist_t *readEndsList, int case_insert);
-char *markDuplicateDiscordant (char *bufferReads, size_t readNum, char *header, MPI_Comm comm);
-void findDuplicaDiscordant(llist_t *fragList, llist_t *readEndsList, hashTable *htbl, int *totalDuplica, int *totalOpticalDuplicate, MPI_Comm comm);
+
+char *markDuplicateDiscordant (char *bufferReads, 
+                                size_t readNum, 
+                                char *header, 
+                                MPI_Comm comm,
+                                size_t *disc_offsets_source, 
+                                size_t **disc_dup_offset_source, 
+                                size_t *disc_dup_number);
+
+void findDuplicaDiscordant(llist_t *fragList, 
+                            llist_t *readEndsList, 
+                            hashTable *htbl, 
+                            int *totalDuplica, 
+                            int *totalOpticalDuplicate, 
+                            MPI_Comm comm);
 
 #endif
