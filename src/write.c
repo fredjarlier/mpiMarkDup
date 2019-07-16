@@ -1757,6 +1757,20 @@ void writeSam(
     //MPI_Info_set(finfo,"cb_buffer_size","2684354560"); /* 128 MBytes (Optional) */
 
     //free(buff_compressed);
+
+    //now we write the magic number end
+   
+    if (rank == master_job_phase_2 ) {
+        static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
+        md_log_rank_debug(master_job_phase_2, "[WRITE] we write EOF \n");
+        MPI_File_seek(out, 0, MPI_SEEK_END);
+        MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
+    }
+
+    MPI_Barrier(split_comm);
+
+
+
     free(compressed_buff);
 
     //if (rank == master_job_phase_2) {
@@ -2851,6 +2865,16 @@ size_t * writeSam_discordant(
     //MPI_Info_set(finfo,"cb_block_size","2684354560"); /* 4194304 MBytes - should match FS block size */
     //MPI_Info_set(finfo,"cb_buffer_size","2684354560"); /* 128 MBytes (Optional) */
 
+    if (rank == master_job_phase_2 ) {
+        static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
+        md_log_rank_debug(master_job_phase_2, "[WRITE] we write EOF \n");
+        MPI_File_seek(out, 0, MPI_SEEK_END);
+        MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
+    }
+
+    MPI_Barrier(split_comm);
+
+
     //free(buff_compressed);
     free(compressed_buff);
 
@@ -3239,6 +3263,18 @@ void writeSam_unmapped(
     //task WRITING OPERATIONS FOR UNMAPPED READS
     MPI_File_set_view(out, write_offset, MPI_BYTE, MPI_BYTE, "native", finfo);
     MPI_File_write(out, char_buff_compressed, (size_t)compressed_size, MPI_BYTE, &status);
+
+    if (split_rank == 0 ) {
+        
+        static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
+        md_log_rank_debug(split_rank, "[WRITE] we write EOF \n");
+        MPI_File_seek(out, 0, MPI_SEEK_END);
+        MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
+    }
+
+    MPI_Barrier(split_comm);
+
+
 
     //if (split_rank == master_job) {
     //    fprintf(stderr, "Rank %d :::::[WRITE] Time for chromosome %s writing %f seconds\n", split_rank, chrName, MPI_Wtime() - time_count);

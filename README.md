@@ -1,30 +1,35 @@
 # mpiMarkDup
 
-MPI and C based program of marking duplicates for Next Generation Sequencing technology.<br /> 
+You are in the development Branch.
 
-The code is a fork from the mpiSORT project. We add a process to manage the marking of duplicate reads.
+In this branch we add new features for the future master release. <br />
 
-The goal is to create a distributed and (near) real time version of the well known Picard MarkDuplicate from the Broad Institute. To do that we rely on low level  technologies and parallel algorithms.<br />
-
-The project is still under development so feel free to test it and report.
-
-This is an open project initiated by Institut Curie HPC team and students from Paris Descartes University.
-
-Development Branch.
-
-In this branch we add new features for the future master release.
-
-Here are the list of things in construction. 
+Here are the list of things in construction. <br />
 
 1) Integrate the discordant reads in chromosom <br />
 
-2) Build only one file with all chromosoms and unmapped <br />
+	We review the general algorithm to include the discordant fragments in the chromosom it belongs. <br />
+	The discordant fragments are filtered and analyzed first and they are also kept in the chromosom buffer. <br />
+	We use offset in the original sam file as unique identifier for the discordant fragments and their duplicates. <br />   
+	Offests of all discordant duplicates are send to each jobs. <br />
+	When we mark duplicates for chromosoms we use offsets in sam to get and mark the discordant duplicates. <br />
+
+	So far the discordant duplicates are stored in a vector. <br />
+	But we should consider a tree structure or a skip list to accelerate the search when marking discordant duplicates. <br />
+
+	Not yet implemented with sorting in any dimension cases <br />
+
+
+2) Build only one file with all chromosoms and unmapped at the end <br />
 
 3) Accelerate the construction of the hashtable. Considering a list of prime number <br />
 
 4) Modify the bruck with a its zero-copy version <br />
 
 5) Generate a bam file instead of gz <br />
+
+	we add magic EOF at the end of each file. <br />
+	but we still have [main_samview] truncated file with samtools view <br />
 
 6) Test with multiple libraries eg multiple RG <br />
 
