@@ -172,6 +172,24 @@ void bruckWrite3(
 		size_t ***dest_offset
 );
 
+void bruckWrite4(MPI_Comm comm, 
+				int rank, 
+				int num_proc,
+                size_t local_readNum, 
+                size_t *number_of_reads_by_procs, 
+                int *new_rank,
+                size_t *buffs_by_procs, 
+                char ***data2,
+                size_t *new_offset, 
+                size_t ***data_offsets,
+                size_t *new_offset_source, 
+                size_t ***data_offsets_source,
+                int *new_size, 
+                int ***data_size
+);
+
+
+
 void bruckMarkdup(
     MPI_Comm comm,
     int rank,
@@ -253,6 +271,31 @@ void writeSam_unmapped(int split_rank,
 
 
 
+size_t *writeSam_any_dim_discordant(
+		int dimensions,
+		int rank,
+		char* output_dir,
+		char* header,
+		size_t local_readNum,
+		size_t total_num_read,
+		char* chrName,
+		int total_num_proc,  //this is the number of proc in split communication
+		MPI_Comm split_comm,
+		int master_rank,
+		MPI_Info finfo,
+		int compression_level,
+		size_t* new_offset_dest,
+		size_t* new_offset_source,
+		size_t* new_coordinates_sorted,
+		int* new_read_size,
+		int* new_rank,
+		char *data,
+		size_t start_offset_in_file,
+		size_t *disc_dup_number
+		);
+
+
+
 void writeSam_any_dim(
 		int dimensions,
 		int rank,
@@ -273,7 +316,7 @@ void writeSam_any_dim(
 		int* new_rank,
 		char *data,
 		size_t start_offset_in_file,
-		size_t **disc_dup_offset_source,
+		size_t *disc_dup_offset_source,
         size_t *disc_dup_number
 		);
 

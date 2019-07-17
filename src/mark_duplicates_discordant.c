@@ -1055,13 +1055,14 @@ char *markDuplicateDiscordant (char *bufferReads,
     }
 
     size_t *disc_dup_offset_source_tmp = calloc( index_in_offset,  sizeof(size_t));
+    
     index_in_offset = 0;
 
     for ( j = 0; j < readNum; j++) {
         //we search discordant reads
         if (!readArr[j] || !readArr[j]->d) continue;
         else if (readArr[j]->d == 1){
-            disc_dup_offset_source_tmp[index_in_offset] =  (int)readArr[j]->offset_source_sam;
+            disc_dup_offset_source_tmp[index_in_offset] =  readArr[j]->offset_source_sam;
             index_in_offset++;            
         }
     }

@@ -2,11 +2,15 @@
 
 You are in the development Branch.
 
+This branch is meant for development purposes. <br />
+
 In this branch we add new features for the future master release. <br />
 
 Here are the list of things in construction. <br />
 
 1) Integrate the discordant reads in chromosom <br />
+
+	16/07/2109
 
 	We review the general algorithm to include the discordant fragments in the chromosom it belongs. <br />
 	The discordant fragments are filtered and analyzed first and they are also kept in the chromosom buffer. <br />
@@ -17,8 +21,14 @@ Here are the list of things in construction. <br />
 	So far the discordant duplicates are stored in a vector. <br />
 	But we should consider a tree structure or a skip list to accelerate the search when marking discordant duplicates. <br />
 
-	Not yet implemented with sorting in any dimension cases <br />
+	17/07/2019
 
+	Test with sorting in any dimension cases and seems to work <br />
+
+	Test of reproducibility with test case seems to work <br />
+
+	We add a test case (test_2M.bam) case in sample directory. <br />
+	Need to uncompress it in sam format before using it. <br />
 
 2) Build only one file with all chromosoms and unmapped at the end <br />
 
@@ -62,6 +72,8 @@ make clean <br />
 
 How to test it
 -------------
+
+The input file is a sam file of aligned pair-end reads with a header. 
 
 mpirun -n cpu_number mpiMD input_sam output_dir -q 0 -d 1000 -v 4 <br />
 

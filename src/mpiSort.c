@@ -1860,14 +1860,7 @@ int main (int argc, char *argv[]) {
                                 split_comm);
                                             
                     MPI_Barrier(split_comm);
-                    /*
-                     for ( j = 0; j < tmp2; j++) {
-                        //disc_dup_offset_source[0][j] = disc_dup_offset_source_tmp[j];
-                        if ( rank == 0 )
-                            fprintf(stderr, " TRACE 1 tmp_vec2[%zu] =%zu \n", j, tmp_vec2[j]);
-                    }
-                    */
-  
+        
                     all_disc_duplicate_offset_source = calloc(*total_disc_duplicates,  sizeof(size_t));
                     size_t ind = 0;
 
@@ -1878,6 +1871,12 @@ int main (int argc, char *argv[]) {
                         }
                     }
                     
+                    for ( j = 0; j < ind; j++) {
+                        //disc_dup_offset_source[0][j] = disc_dup_offset_source_tmp[j];
+                        if ( rank == 0 )
+                            fprintf(stderr, " TRACE 1 tmp_vec2[%zu] =%zu \n", j, all_disc_duplicate_offset_source[j]);
+                    }
+        
                     free(tmp_vec);
                     free(tmp_vec2);
                     free(local_disc_duplicate_offset_source);
@@ -1930,26 +1929,134 @@ int main (int argc, char *argv[]) {
                  *
                  */
 
-                parallel_sort_any_dim(
-                    dimensions,                 //dimension for parabitonic
-                    local_readNum,
-                    split_rank,
-                    split_size,
-                    reads,
-                    i,                          //chromosom number
-                    chosen_split_rank,
-                    split_comm,
-                    localReadNumberByChr,
-                    local_data,
-                    output_dir,
-                    finfo,
-                    compression_level,
-                    total_reads_by_chr,
-                    goff[rank],
-                    headerSize,
-                    header,
-                    chrNames[i]  
-                    );
+                if (i == nbchr - 1){
+
+                    local_disc_duplicate_offset_source = parallel_sort_any_dim_discordant(
+                                                                    dimensions,                 //dimension for parabitonic
+                                                                    local_readNum,
+                                                                    split_rank,
+                                                                    split_size,
+                                                                    reads,
+                                                                    i,                          //chromosom number
+                                                                    chosen_split_rank,
+                                                                    split_comm,
+                                                                    localReadNumberByChr,
+                                                                    local_data,
+                                                                    output_dir,
+                                                                    finfo,
+                                                                    compression_level,
+                                                                    total_reads_by_chr,
+                                                                    goff[rank],
+                                                                    headerSize,
+                                                                    header,
+                                                                    chrNames[i],
+                                                                    local_disc_duplicate_number
+                                                                    );
+                    /*
+                        Now we exchange every local_disc_duplicate_offset_source
+                        We use AllGather
+                    */    
+             
+                    
+                    size_t max_disc_duplicates = 0;
+
+                    MPI_Allreduce(local_disc_duplicate_number, 
+                                    total_disc_duplicates, 
+                                    1, 
+                                    MPI_LONG_LONG_INT, 
+                                    MPI_SUM, split_comm
+                                    );
+
+                    size_t *disc_dup_by_rank = malloc(num_proc * sizeof(size_t));
+                        
+                    MPI_Allgather( local_disc_duplicate_number , 
+                                        1, 
+                                        MPI_LONG_LONG_INT,
+                                        disc_dup_by_rank, 
+                                        1,
+                                        MPI_LONG_LONG_INT,
+                                        split_comm);
+
+                    MPI_Allreduce(local_disc_duplicate_number ,
+                                    &max_disc_duplicates, 
+                                        1, 
+                                        MPI_LONG_LONG_INT,
+                                        MPI_MAX,
+                                        split_comm);
+    
+                    size_t *tmp_vec = calloc(max_disc_duplicates, sizeof(size_t));
+
+                    for ( j = 0; j < *local_disc_duplicate_number; j++) 
+                        tmp_vec[j] = local_disc_duplicate_offset_source[j];
+
+
+
+                    size_t tmp2 = max_disc_duplicates * split_size;
+
+                    md_log_debug("rank %d total disc offset= %zu \n", rank, *total_disc_duplicates);
+                    
+                    size_t *tmp_vec2 = calloc(tmp2,  sizeof(size_t));
+          
+                    //double timeStamp = MPI_Wtime();
+                    MPI_Barrier(split_comm);
+                        
+                    MPI_Allgather( tmp_vec, 
+                                max_disc_duplicates, 
+                                MPI_LONG_LONG_INT,
+                                tmp_vec2, 
+                                max_disc_duplicates,
+                                MPI_LONG_LONG_INT,
+                                split_comm);
+                                            
+                    MPI_Barrier(split_comm);
+        
+                    all_disc_duplicate_offset_source = calloc(*total_disc_duplicates,  sizeof(size_t));
+                    size_t ind = 0;
+
+                    for ( j = 0; j < tmp2; j++) {
+                        if (tmp_vec2[j] != 0){
+                            all_disc_duplicate_offset_source[ind] = tmp_vec2[j];
+                            ind++;
+                        }
+                    }
+                    
+                    for ( j = 0; j < ind; j++) {
+                        //disc_dup_offset_source[0][j] = disc_dup_offset_source_tmp[j];
+                        if ( rank == 0 )
+                            fprintf(stderr, " TRACE 1 tmp_vec2[%zu] =%zu \n", j, all_disc_duplicate_offset_source[j]);
+                    }
+        
+                    free(tmp_vec);
+                    free(tmp_vec2);
+                    free(local_disc_duplicate_offset_source);
+                    free(local_disc_duplicate_number);
+
+                }
+                else {
+
+                        parallel_sort_any_dim(
+                                            dimensions,                 //dimension for parabitonic
+                                            local_readNum,
+                                            split_rank,
+                                            split_size,
+                                            reads,
+                                            i,                          //chromosom number
+                                            chosen_split_rank,
+                                            split_comm,
+                                            localReadNumberByChr,
+                                            local_data,
+                                            output_dir,
+                                            finfo,
+                                            compression_level,
+                                            total_reads_by_chr,
+                                            goff[rank],
+                                            headerSize,
+                                            header,
+                                            chrNames[i],
+                                            all_disc_duplicate_offset_source,
+                                            total_disc_duplicates
+                                            );
+                }
 
             } //end if dimensions < split_rank
 
