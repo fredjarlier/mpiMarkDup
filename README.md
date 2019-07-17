@@ -27,8 +27,6 @@ Here are the list of things in construction. <br />
 
 	Test of reproducibility with test case seems to work <br />
 
-	We add a test case (test_2M.bam) case in sample directory. <br />
-	Need to uncompress it in sam format before using it. <br />
 
 2) Build only one file with all chromosoms and unmapped at the end <br />
 
