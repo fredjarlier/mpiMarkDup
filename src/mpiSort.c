@@ -1870,13 +1870,13 @@ int main (int argc, char *argv[]) {
                             ind++;
                         }
                     }
-                    
+                    /*
                     for ( j = 0; j < ind; j++) {
                         //disc_dup_offset_source[0][j] = disc_dup_offset_source_tmp[j];
                         if ( rank == 0 )
                             fprintf(stderr, " TRACE 1 tmp_vec2[%zu] =%zu \n", j, all_disc_duplicate_offset_source[j]);
                     }
-        
+                    */
                     free(tmp_vec);
                     free(tmp_vec2);
                     free(local_disc_duplicate_offset_source);

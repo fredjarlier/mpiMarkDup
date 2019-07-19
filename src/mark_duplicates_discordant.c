@@ -639,7 +639,7 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
             
             for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
                
-        		// compare clipped position first because read2mateFP is expensive
+               	// compare clipped position first because read2mateFP is expensive
                 if (node->read->coordPos == matesByProc[i]->coordMatePos) {
 				
                    //unsigned long long fragMateFingerprint = read2mateFP(node->read);

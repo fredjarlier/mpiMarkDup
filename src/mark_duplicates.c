@@ -601,6 +601,7 @@ readInfo *readParsing (char *sam_buff,
     assert (( read->pair_num == 1) || ( read->pair_num == 2 ));
 
     read->fingerprint = read2Fingerprint(read);
+    read->mate_fingerprint = read2mateFP(read);
     assert(read->fingerprint);
 
     //Now we search in the flag for LB name
@@ -2340,8 +2341,9 @@ void exchangeExternFrag(llist_t *fragList,
         		// compare clipped position first because read2mateFP is expensive
                 if (node->read->coordPos == matesByProc[i]->coordMatePos) {
 				
-                     unsigned long long fragMateFingerprint = read2mateFP(node->read);
-		    
+                     //unsigned long long fragMateFingerprint = read2mateFP(node->read);
+		              unsigned long long fragMateFingerprint = node->read->mate_fingerprint;
+
 		              if (matesByProc[i]->fingerprint == fragMateFingerprint) {
 
                         buildReadEnds(matesByProc[i], node->read, readEndsList );    
