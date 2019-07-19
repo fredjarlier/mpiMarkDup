@@ -45,6 +45,7 @@ typedef struct readInfo {
     int mateChromosome; 
 
     size_t fingerprint;    /**< MD5 of the Qname + number in pair */
+    size_t mate_fingerprint;
     size_t coordPos;                    /**< clipped read position (coordinate in sam file) */
     size_t unclippedCoordPos;           /**< unclipped read position */
     size_t coordMatePos;                /**< clipped mate position (coordinate in sam file) */
