@@ -2261,7 +2261,7 @@ void exchangeExternFrag(llist_t *fragList,
     /* Exchange mates and fill them to a readInfo array */
     readInfo **matesByProc;
     //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
-    size_t totalrecv = exchangeAndFillMate_with_Bruck_v2(&matesByProc, mates, numberOfExternalMate, comm);
+    size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
 
     free(mates);
@@ -2309,13 +2309,13 @@ void exchangeExternFrag(llist_t *fragList,
                 LB, paire_num, orientation, coordMatePos
 
            */
-           matesByProc[i]->readLb = mate->readLb;
+           //matesByProc[i]->readLb = mate->readLb;
            //matesByProc[i]->orientation = readBits((unsigned int)mate->valueFlag, 5);
 
-           if (mate->pair_num == 1) matesByProc[i]->pair_num = 2; 
-           if (mate->pair_num == 2) matesByProc[i]->pair_num = 1;
+           //if (mate->pair_num == 1) matesByProc[i]->pair_num = 2; 
+           //if (mate->pair_num == 2) matesByProc[i]->pair_num = 1;
 
-           matesByProc[i]->coordMatePos = mate->coordPos;
+           //matesByProc[i]->coordMatePos = mate->coordPos;
 
             /* free fictitious mate */
             freeRead(mate);
