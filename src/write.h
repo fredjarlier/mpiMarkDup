@@ -127,12 +127,20 @@ void bruckWrite(MPI_Comm comm,
 				int ***data_size
 	);
 */
-void bruckWrite(MPI_Comm comm, int rank, int num_proc,
-                size_t local_readNum, size_t *number_of_reads_by_procs, int *new_rank,
-                size_t *buffs_by_procs, char ***data2,
-                size_t *new_offset, size_t ***data_offsets,
-                size_t *new_offset_source, size_t ***data_offsets_source,
-                int *new_size, int ***data_size);
+void bruckWrite(MPI_Comm comm, 
+				int rank, 
+				int num_proc,
+                size_t local_readNum, 
+                size_t *number_of_reads_by_procs, 
+                int *new_rank,
+                size_t *buffs_by_procs, 
+                char ***data2,
+                size_t *new_offset, 
+                size_t ***data_offsets,
+                size_t *new_offset_source, 
+                size_t ***data_offsets_source,
+                int *new_size, 
+                int ***data_size);
 
 void bruckWrite2(
 	    MPI_Comm comm,
@@ -188,8 +196,6 @@ void bruckWrite4(MPI_Comm comm,
                 int ***data_size
 );
 
-
-
 void bruckMarkdup(
     MPI_Comm comm,
     int rank,
@@ -221,6 +227,26 @@ void bruckMarkdup(
     unsigned int ***rcv_mate_orientation
 );
 
+void bruckMarkdup_v2(
+    MPI_Comm comm,
+    int rank,
+    int num_proc,
+    size_t local_readNum,
+    size_t *number_of_reads_by_procs,
+    int *new_rank,
+    int *snd_mate_phredscore,    
+    int ***rcv_mate_phredscore,
+    size_t *snd_mate_indexAfterSort,
+    size_t ***rcv_mate_indexAfterSort,
+    size_t *snd_mate_unclippedCoordPos,
+    size_t ***rcv_mate_unclippedCoordPos,
+    size_t *snd_mate_coordPos,
+    size_t ***rcv_mate_coordPos,
+    size_t *snd_mate_fingerprint,
+    size_t ***rcv_mate_fingerprint,
+    unsigned int *snd_mate_valueFlag,
+    unsigned int ***rcv_mate_valueFlag
+);
 
 void bruck_reads(	MPI_Comm comm, 
 					int rank, 

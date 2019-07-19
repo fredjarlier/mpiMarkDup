@@ -220,16 +220,47 @@ void bruckMarkdup(
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordPos, new_rank, snd_mate_coordPos);
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordMatePos, new_rank, snd_mate_coordMatePos);
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_fingerprint, new_rank, snd_mate_fingerprint);
-
-    
-
     //bruck for int type
-    
     bruck_unsigned_int(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_pair_num, new_rank, snd_mate_pair_num);
     bruck_unsigned_int(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_valueFlag, new_rank, snd_mate_valueFlag);
     bruck_unsigned_int(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_orientation, new_rank, snd_mate_orientation);
     
     }
+
+
+void bruckMarkdup_v2(
+    MPI_Comm comm,
+    int rank,
+    int num_proc,
+    size_t local_readNum,
+    size_t *number_of_reads_by_procs,
+    int *new_rank,
+    int *snd_mate_phredscore,    
+    int ***rcv_mate_phredscore,
+    size_t *snd_mate_indexAfterSort,
+    size_t ***rcv_mate_indexAfterSort,
+    size_t *snd_mate_unclippedCoordPos,
+    size_t ***rcv_mate_unclippedCoordPos,
+    size_t *snd_mate_coordPos,
+    size_t ***rcv_mate_coordPos,
+    size_t *snd_mate_fingerprint,
+    size_t ***rcv_mate_fingerprint,
+    unsigned int *snd_mate_valueFlag,
+    unsigned int ***rcv_mate_valueFlag
+      
+) {
+
+    //bruck for size_t type
+    
+    bruck_size(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_phredscore, new_rank, snd_mate_phredscore);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_indexAfterSort, new_rank, snd_mate_indexAfterSort);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_unclippedCoordPos, new_rank, snd_mate_unclippedCoordPos);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordPos, new_rank, snd_mate_coordPos);
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_fingerprint, new_rank, snd_mate_fingerprint);
+
+    bruck_unsigned_int(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_valueFlag, new_rank, snd_mate_valueFlag);    
+}
+
 
 void bruck_unsigned_int(MPI_Comm comm, int rank, int num_proc, size_t local_readNum, 
                             size_t *number_of_reads_by_procs, unsigned int **data_size, 
@@ -1716,14 +1747,14 @@ void writeSam(
     //free(buff_compressed);
 
     //now we write the magic number end
-   
+    /*
     if (rank == master_job_phase_2 ) {
         static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
         md_log_rank_debug(master_job_phase_2, "[WRITE] we write EOF \n");
         MPI_File_seek(out, 0, MPI_SEEK_END);
         MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
     }
-
+    */
     MPI_Barrier(split_comm);
 
 
@@ -2794,14 +2825,14 @@ size_t * writeSam_discordant(
     //MPI_Info_set(finfo,"cb_nodes","128");
     //MPI_Info_set(finfo,"cb_block_size","2684354560"); /* 4194304 MBytes - should match FS block size */
     //MPI_Info_set(finfo,"cb_buffer_size","2684354560"); /* 128 MBytes (Optional) */
-
+    /*
     if (rank == master_job_phase_2 ) {
         static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
         md_log_rank_debug(master_job_phase_2, "[WRITE] we write EOF \n");
         MPI_File_seek(out, 0, MPI_SEEK_END);
         MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
     }
-
+    */
     MPI_Barrier(split_comm);
 
 
@@ -3186,7 +3217,7 @@ void writeSam_unmapped(
     //task WRITING OPERATIONS FOR UNMAPPED READS
     MPI_File_set_view(out, write_offset, MPI_BYTE, MPI_BYTE, "native", finfo);
     MPI_File_write(out, char_buff_compressed, (size_t)compressed_size, MPI_BYTE, &status);
-
+    /*
     if (split_rank == 0 ) {
         
         static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
@@ -3194,7 +3225,7 @@ void writeSam_unmapped(
         MPI_File_seek(out, 0, MPI_SEEK_END);
         MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
     }
-
+    */
     MPI_Barrier(split_comm);
 
 
@@ -5241,7 +5272,7 @@ void writeSam_any_dim(
         MPI_Info_set(finfo,"cb_block_size","2684354560"); // 4194304 MBytes - should match FS block size
         MPI_Info_set(finfo,"cb_buffer_size","2684354560"); // 128 MBytes (Optional)
         */
-
+        /*
         if (rank == chosen_rank ) {
 
             static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
@@ -5249,7 +5280,7 @@ void writeSam_any_dim(
             MPI_File_seek(out, 0, MPI_SEEK_END);
             MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
         }
-
+        */
 
 
 
@@ -7345,14 +7376,14 @@ size_t *writeSam_any_dim_discordant(
         MPI_Info_set(finfo,"cb_buffer_size","2684354560"); // 128 MBytes (Optional)
         */
 
-
+        /*
         if (rank == chosen_rank ) {
             static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
             md_log_rank_debug(master_job_phase_2, "[WRITE] we write EOF \n");
             MPI_File_seek(out, 0, MPI_SEEK_END);
             MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
         }
-
+        */
 
         free(compressed_buff);
 

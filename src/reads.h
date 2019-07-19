@@ -98,5 +98,7 @@ void createCMType(MPI_Datatype *CMtype) ;
 int cmpMateRank(const void *a, const void *b) ;
 //orientation getOrientation (readInfo *read, const int isPaired) ;
 unsigned int getOrientation (readInfo *read, const int isPaired);
-int isPaired(readInfo *read) ;
+unsigned int getOrientation_v2 (const int isPaired, unsigned int read_flag, unsigned int mate_flag);
+
+int isPaired(readInfo *read);
 #endif /* ifndef READS_H */

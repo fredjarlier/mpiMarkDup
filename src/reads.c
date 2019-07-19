@@ -209,6 +209,43 @@ unsigned int getOrientation (readInfo *read, const int isPaired) {
     }
 }
 
+
+unsigned int getOrientation_v2 (const int isPaired, unsigned int read_flag, unsigned int mate_flag) {
+
+    unsigned int readReverseStrand = read_flag;
+
+    if (!isPaired) {
+        //return readReverseStrand ? R : F;
+        return readReverseStrand ? 1 : 0;
+    } else {
+        unsigned int mateReverseStrand = mate_flag;
+
+        int read1NegativeStrand = readReverseStrand;;
+        int read2NegativeStrand = mateReverseStrand;;
+
+        if (read1NegativeStrand) {
+            if (read2NegativeStrand) {
+                //return RR;
+                return 4;
+
+            } else {
+                //return RF;
+                return 5;
+            }
+
+        } else {
+            if (read2NegativeStrand) {
+                //return FR;
+                return 3;
+
+            } else {
+                //return FF;
+                return 2;
+            }
+        }
+    }
+}
+
 /**
  * @date 2018 Apr 15
  * @brief Verify if a read is paired

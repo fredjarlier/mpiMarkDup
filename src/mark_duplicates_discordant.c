@@ -72,13 +72,7 @@ extern int opticalDistance;
 readInfo *buildReadEndsDiscordant(readInfo *read1, readInfo *read2, llist_t *readEndsList, int case_insert) {
     //md_log_trace("read1=%s, read2=%s, read1->unclippedCoordPos=%zu, read1->coordMatePos=%zu, read2->unclippedCoordPos=%zu, read2->coordMatePos=%zu, read1->orientation=%d, read2->orientation=%d\n", read1->Qname, read2->Qname, read1->unclippedCoordPos, read1->coordMatePos, read2->unclippedCoordPos, read2->coordMatePos, read1->orientation, read2->orientation);
 
-    assert(read1->pair_num == 1 || read1->pair_num == 2); 
-    assert(read2->pair_num == 1 || read2->pair_num == 2);
-
-    if (read1->pair_num == 1) assert(read2->pair_num == 2);
-    if (read1->pair_num == 2) assert(read2->pair_num == 1);
-  
-
+    
     //get unclipped mate coord
     read1->coordMatePos = read2->unclippedCoordPos;
     read2->coordMatePos = read1->unclippedCoordPos;
@@ -599,7 +593,7 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
     /* Exchange mates and fill them to a readInfo array */
     readInfo **matesByProc;
     //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
-    size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
+    size_t totalrecv = exchangeAndFillMate_with_Bruck_v2(&matesByProc, mates, numberOfExternalMate, comm);
 
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFragDiscordant] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
 
@@ -608,26 +602,10 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
     //test if we have nothing to do we return
     if (totalrecv == 0) return; 
 
-
-    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
-                readInfo *read = node->read;
-                //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
-                assert( (read->pair_num == 1) || (read->pair_num == 2));
-            }
-
-            /* TRACE readEndsList */
-            for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
-                readInfo *read = node->read;
-                //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
-                assert( (read->pair_num == 1) || (read->pair_num == 2));
-            }    
-
-
-
     int mateCounter = 0;
     for (size_t i = 0; i < totalrecv; i++) {
         readInfo *mate = getReadFromFingerprint(htbl, matesByProc[i]->fingerprint);
-        assert( (mate->pair_num == 1) || (mate->pair_num == 2));
+       
         /* Only external mate of the current buffer has a slot in hash table.
          * Note that the array matesByProc contains all externals mates among all process.
          * */
@@ -638,68 +616,37 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
         if (mate) {
             //assert(mate->external);
 	    if (!mate->external) continue;
+
+            /*
+                We fill up missing information of matesByProc[i]
+                LB, paire_num, orientation, coordMatePos
+
+           */
+           matesByProc[i]->readLb = mate->readLb;
+           //matesByProc[i]->orientation = readBits((unsigned int)mate->valueFlag, 5);
+
+           if (mate->pair_num == 1) matesByProc[i]->pair_num = 2; 
+           if (mate->pair_num == 2) matesByProc[i]->pair_num = 1;
+
+           matesByProc[i]->coordMatePos = mate->coordPos;
+
             /* free fictitious mate */
             freeRead(mate);
             /* insert external mate, it is partially filled as a readInfo */
             hashTableInsert(htbl, matesByProc[i]);
-
-            /* insert mate in fragments list and readEnds list (if we can construct pair) 
-             * TODO: To optimize :
-             *  - mate distribution among process may be unbalanced 
-             *    Illustration :
-             *        rank 0 : send 2 mates
-             *        rank 1 : send 3 mates
-             *         ...        ...
-             *        rank 28 : send 2923 mates
-             *  - We need to go through fragments list because we can't deduce mate's fingerprint by read's fingerprint.
-             *    We need at least mate's Qname and mate's Flag, but we don't exchange them.
-             *  - In the example above, rank 28 need to do 2923 * fragList->size comparisons in worst case.
-             *   
-             * */
             
             for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
                
         		// compare clipped position first because read2mateFP is expensive
                 if (node->read->coordPos == matesByProc[i]->coordMatePos) {
 				
-
-                   assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
-                   
                    unsigned long long fragMateFingerprint = read2mateFP(node->read);
 		    
 		              if (matesByProc[i]->fingerprint == fragMateFingerprint) {
 
-                        /*if (matesByProc[i]->valueFlag == 0)
-                            fprintf(stderr, "on %d problem with %d read %s valueFlag is NULL \n", totalrecv, i, node->read->Qname);
-			                   
-                        
-
-                        if (node->read->pair_num == 1){
-                            matesByProc[i]->pair_num = 2;
-                        }
-                        if (node->read->pair_num == 2){
-                            matesByProc[i]->pair_num == 1;
-                        }*/
-                        /*
-                        fprintf(stderr, "Call buildsreadEnds read %s valueFlag is = %u pair = %u \n", node->read->Qname, node->read->valueFlag
-                            , node->read->pair_num);
-
-
-                        fprintf(stderr, "Call buildsreadEnds matesByProc[%d] %s valueFlag is = %u pair = %u \n", i, matesByProc[i]->Qname, matesByProc[i]->valueFlag
-                            , matesByProc[i]->pair_num);
-                        */
-
                         buildReadEndsDiscordant(matesByProc[i], node->read, readEndsList, 1);
                         insertReadInList(fragList, matesByProc[i]) ;
                         matesByProc[i]->Qname = strdup(node->read->Qname);
-
-                        assert ((node->read->pair_num == 1 ) || (node->read->pair_num ==2));
-                        
-                        if (node->read->pair_num == 1) assert (matesByProc[i]->pair_num == 2); 
-                        if (node->read->pair_num == 2) assert (matesByProc[i]->pair_num == 1);
-                        assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
-
-                        //matesByProc[i]->valueFlag = readFlag2MateFlag(node->read->valueFlag);
                         mateCounter++;
                         break;
 
@@ -714,20 +661,6 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
 
     md_log_rank_trace(rank, "Found %d/%d mates\n", mateCounter, totalrecv);
 
-    for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
-                readInfo *read = node->read;
-                //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
-                assert( (read->pair_num == 1) || (read->pair_num == 2));
-            }
-
-            /* TRACE readEndsList */
-    for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
-           readInfo *read = node->read;
-           //md_log_trace("lb=%zu, chr=%zu, unclippedCoordPos=%zu, orientation=%zu, mchr=%zu, mateUnclippedCoordPos=%zu, rindex=%zu, mindex=%zu\n", read->readLb, read->readChromosome, read->unclippedCoordPos, read->orientation, read->mateChromosome, read->coordMatePos, read->indexAfterSort, read->mateIndexAfterSort);
-           assert( (read->pair_num == 1) || (read->pair_num == 2));
-   }    
-
-
     for (lnode_t *node = readEndsList->head; node != readEndsList->nil; node = node->next) {
         assert(node->read);
         readInfo *mate = getMateFromRead(htbl, node->read);
@@ -739,10 +672,7 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
 
         node->read->pairPhredScore += mate->phred_score;
         node->read->mateIndexAfterSort = mate->indexAfterSort;
-        assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
-        assert( (mate->pair_num == 1) || (mate->pair_num == 2));
-        if (node->read->pair_num == 1) assert (mate->pair_num == 2); 
-        if (node->read->pair_num == 2) assert (mate->pair_num == 1);
+       
     }
     /* free external mates in current library, others reads are free in destroyLBList */
     free(matesByProc);
