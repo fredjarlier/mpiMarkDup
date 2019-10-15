@@ -2010,7 +2010,7 @@ int fillReadAndFictitiousMate(readInfo **readArr, readInfo ***readArrWithExterna
             (*readArrWithExternal)[current++] = readArr[i];
             readInfo *mate = calloc(1, sizeof(readInfo));
             /* clone read */
-            mate = cloneRead(readArr[i]);            
+            cloneRead(readArr[i], mate);            
 
             //md_log_rank_trace(rank, "fictitious mate Qname = %s\n", mate->Qname);
             mate->external = 1;

@@ -2188,6 +2188,7 @@ size_t * writeSam_discordant(
         new_local_offset_source_sorted_bruck2[j]            = new_local_offset_source_sorted_bruck[coord_index[j]];
     }
 
+    free(new_local_reads_sizes_sorted_bruck);
     free(new_local_offset_source_sorted_bruck);
     free(new_local_reads_sizes_sorted_bruck);
     free(new_local_offset_destination_bruck);

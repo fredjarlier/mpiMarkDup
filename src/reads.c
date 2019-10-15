@@ -135,8 +135,8 @@ void createMateType(MPI_Datatype *mate_type) {
  * @return a read cloned
  */
 
-readInfo *cloneRead(readInfo *read) {
-    readInfo *clonedRead = calloc(1, sizeof(readInfo));
+void cloneRead(readInfo *read, readInfo *clonedRead) {
+    //readInfo *clonedRead = calloc(1, sizeof(readInfo));
     clonedRead->fingerprint = read->fingerprint;
     clonedRead->Qname   = strdup(read->Qname);
     clonedRead->cigar   = strdup(read->cigar);
@@ -161,7 +161,7 @@ readInfo *cloneRead(readInfo *read) {
     clonedRead->orientation = read->orientation;
     clonedRead->pair_num = read->pair_num;
 
-    return clonedRead;
+    //return clonedRead;
 }
 
 /**

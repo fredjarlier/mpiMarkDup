@@ -65,7 +65,7 @@ void insertReadInList(llist_t *l, readInfo *read);
 int ComputePercentageIncrement(size_t readNum, int readSecRatio, int second);
 char* addDuplicateFlag(char *oldReadLine, readInfo *read);
 void checkMateBuffer(readInfo *read, Interval *intervalByProc, MPI_Comm comm);
-readInfo* cloneRead(readInfo *read);
+//readInfo* cloneRead(readInfo *read);
 int cmpMateRank(const void *a, const void *b);
 int computeCountAndDispl(int *scounts, int **sdispls, int **rcounts, int **rdispls, MPI_Comm comm);
 coord computePhysicalLocation(readInfo *read);

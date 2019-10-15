@@ -92,7 +92,7 @@ typedef struct {
 
 
 int freeRead(readInfo *read) ;
-readInfo *cloneRead(readInfo *read) ;
+void cloneRead(readInfo *read, readInfo *mate) ;
 void createMateType(MPI_Datatype *mate_type) ;
 void createCMType(MPI_Datatype *CMtype) ;
 int cmpMateRank(const void *a, const void *b) ;
