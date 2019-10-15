@@ -112,4 +112,8 @@ char* writeBuff(char **samTokenLines, readInfo **readArr, size_t readNum);
 void zeroCopyBruck(const void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm);
 CMInfo read2CM(readInfo *read) ;
 size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, size_t numberOfReadsToSend, MPI_Comm comm);
+size_t exchangeAndFillMate_with_Bruck_v2(readInfo ***matesByProc, mateInfo *mates, size_t numberOfReadsToSend, MPI_Comm comm);
+readInfo *buildReadEnds(readInfo *read1, readInfo *read2, llist_t *readEndsList);
+readInfo *buildReadEnds_v2(readInfo *read1, readInfo *read2, llist_t *readEndsList);
+
 #endif

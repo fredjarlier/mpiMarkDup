@@ -45,6 +45,7 @@ typedef struct readInfo {
     int mateChromosome; 
 
     size_t fingerprint;    /**< MD5 of the Qname + number in pair */
+    size_t mate_fingerprint;
     size_t coordPos;                    /**< clipped read position (coordinate in sam file) */
     size_t unclippedCoordPos;           /**< unclipped read position */
     size_t coordMatePos;                /**< clipped mate position (coordinate in sam file) */
@@ -98,5 +99,7 @@ void createCMType(MPI_Datatype *CMtype) ;
 int cmpMateRank(const void *a, const void *b) ;
 //orientation getOrientation (readInfo *read, const int isPaired) ;
 unsigned int getOrientation (readInfo *read, const int isPaired);
-int isPaired(readInfo *read) ;
+unsigned int getOrientation_v2 (const int isPaired, unsigned int read_flag, unsigned int mate_flag);
+
+int isPaired(readInfo *read);
 #endif /* ifndef READS_H */
