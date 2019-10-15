@@ -2221,7 +2221,7 @@ size_t * writeSam_discordant(
 
     free(new_local_reads_sizes_sorted_bruck);
     free(new_local_offset_source_sorted_bruck);
-    free(new_local_reads_sizes_sorted_bruck);
+    free(new_local_reads_dest_rank_sorted_bruck);
     free(new_local_offset_destination_bruck);
     free(coord_index);
 
