@@ -374,57 +374,31 @@ void exchangeExternFragDiscordant(llist_t *fragList, llist_t *readEndsList, hash
              *   
              * */
             
-            for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
+            //for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
                
         		// compare clipped position first because read2mateFP is expensive
-                if (node->read->coordPos == matesByProc[i]->coordMatePos) {
+                //if (node->read->coordPos == matesByProc[i]->coordMatePos) {
 				
 
-                   assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
+                   //assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
                    
-                   unsigned long long fragMateFingerprint = read2mateFP(node->read);
-		    
-		              if (matesByProc[i]->fingerprint == fragMateFingerprint) {
+                   //unsigned long long fragMateFingerprint = (matesByProc[i]);
 
-                        /*if (matesByProc[i]->valueFlag == 0)
-                            fprintf(stderr, "on %d problem with %d read %s valueFlag is NULL \n", totalrecv, i, node->read->Qname);
-			                   
-                        
-
-                        if (node->read->pair_num == 1){
-                            matesByProc[i]->pair_num = 2;
-                        }
-                        if (node->read->pair_num == 2){
-                            matesByProc[i]->pair_num == 1;
-                        }*/
-                        /*
-                        fprintf(stderr, "Call buildsreadEnds read %s valueFlag is = %u pair = %u \n", node->read->Qname, node->read->valueFlag
-                            , node->read->pair_num);
-
-
-                        fprintf(stderr, "Call buildsreadEnds matesByProc[%d] %s valueFlag is = %u pair = %u \n", i, matesByProc[i]->Qname, matesByProc[i]->valueFlag
-                            , matesByProc[i]->pair_num);
-                        */
-
-                        buildReadEndsDiscordant(matesByProc[i], node->read, readEndsList, 1);
-                        insertReadInList(fragList, matesByProc[i]) ;
-                        matesByProc[i]->Qname = strdup(node->read->Qname);
-
-                        assert ((node->read->pair_num == 1 ) || (node->read->pair_num ==2));
-                        
-                        if (node->read->pair_num == 1) assert (matesByProc[i]->pair_num == 2); 
-                        if (node->read->pair_num == 2) assert (matesByProc[i]->pair_num == 1);
-                        assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
-
-                        //matesByProc[i]->valueFlag = readFlag2MateFlag(node->read->valueFlag);
-                        mateCounter++;
-                        break;
-
-                    }
-
-                }
-
-            }
+					   
+ 
+		        //if (matesByProc[i]->fingerprint == fragMateFingerprint) {
+				//fprintf(stderr,"rank = %d :::  matesByProc[i]->mate_fingerprint %zu ::: matesByProc[i]->fingerprint %zu \n", rank, matesByProc[i]->mate_fingerprint, matesByProc[i]->fingerprint);
+				readInfo *read = getReadFromFingerprint(htbl, matesByProc[i]->mate_fingerprint);
+				assert(read);
+		                buildReadEnds(matesByProc[i], read, readEndsList );    
+		                insertReadInList(fragList, matesByProc[i]) ;
+		                matesByProc[i]->Qname = strdup(read->Qname);
+		                assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
+		                mateCounter++;
+		                //break;
+                    	//} //END  if (matesByProc[i]->fingerprint == fragMateFingerprint)
+                //  }//END if (node->read->coordPos == matesByProc[i]->coordMatePos)
+             //}// END for (lnode_t *node = fragList->head;
 
         }
     }
