@@ -1,4 +1,6 @@
-CFLAGS = -g -O2 -Wall -Wextra -Werror -std=c99
+CFLAGS = -g -O2 -Wall -Wextra -std=c99
+
+# -Werror
 
 SUBDIRS = . src
 
