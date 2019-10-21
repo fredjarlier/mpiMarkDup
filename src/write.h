@@ -161,6 +161,8 @@ void bruckMarkdup(
     size_t ***rcv_mate_coordMatePos,
     size_t *snd_mate_fingerprint,
     size_t ***rcv_mate_fingerprint,
+    size_t *snd_mate_fingerprint2,
+    size_t ***rcv_mate_fingerprint2,
     unsigned int *snd_mate_valueFlag,
     unsigned int ***rcv_mate_valueFlag,
     unsigned int *snd_mate_pair_num,

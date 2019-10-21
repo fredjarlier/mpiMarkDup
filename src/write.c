@@ -166,6 +166,8 @@ void bruckMarkdup(
     size_t ***rcv_mate_coordMatePos,
     size_t *snd_mate_fingerprint,
     size_t ***rcv_mate_fingerprint,
+    size_t *snd_mate_fingerprint2,
+    size_t ***rcv_mate_fingerprint2,
     unsigned int *snd_mate_valueFlag,
     unsigned int ***rcv_mate_valueFlag,
     unsigned int *snd_mate_pair_num,
@@ -183,7 +185,7 @@ void bruckMarkdup(
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordPos, new_rank, snd_mate_coordPos);
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_coordMatePos, new_rank, snd_mate_coordMatePos);
     bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_fingerprint, new_rank, snd_mate_fingerprint);
-
+    bruck_offsets(comm, rank, num_proc, local_readNum, number_of_reads_by_procs, *rcv_mate_fingerprint2, new_rank, snd_mate_fingerprint2);
     
 
     //bruck for int type
@@ -3616,7 +3618,7 @@ void writeSam_any_dim(
      */ 
 
      MPI_Comm split_comm_2;
-     int chosen_rank;
+     int chosen_rank = 0;
      int i1 = 0;
      int val_tmp2 = 0;
      int val_tmp1 = 0;
