@@ -2066,25 +2066,15 @@ void exchangeExternFrag(llist_t *fragList,
     size_t actualNumberToSend = getMateRankReadSizeBeforeBruck(fragList, &mates);
 
     double timeStamp, timeStart = 0;
-
-
-
     assert(actualNumberToSend == numberOfExternalMate);
-
     /* Sort mates to send  by mate rank */
     qsort(mates, numberOfExternalMate, sizeof(mateInfo), cmpMateRank);
-
-
     /* Exchange mates and fill them to a readInfo array */
     readInfo **matesByProc;
-
-    timeStart = MPI_Wtime();
 
     //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
     size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
-
-    fprintf(stderr,"rank = %d ::: End exchanging mates %f seconds \n", rank, MPI_Wtime() - timeStart);
 
     free(mates);
 
@@ -2108,8 +2098,6 @@ void exchangeExternFrag(llist_t *fragList,
     }    
     */
 
-    timeStart = MPI_Wtime();
-
     int mateCounter = 0;
     for (size_t i = 0; i < totalrecv; i++) {
 
@@ -2131,14 +2119,14 @@ void exchangeExternFrag(llist_t *fragList,
             hashTableInsert(htbl, matesByProc[i]);
 
            //fprintf(stderr,"rank = %d :::  matesByProc[i]->mate_fingerprint %zu ::: matesByProc[i]->fingerprint %zu \n", rank, matesByProc[i]->mate_fingerprint, matesByProc[i]->fingerprint);
-	   readInfo *read = getReadFromFingerprint(htbl, matesByProc[i]->mate_fingerprint);
-	   assert(read);
-	   buildReadEnds(matesByProc[i], read, readEndsList );    
-	   insertReadInList(fragList, matesByProc[i]) ;
-	   matesByProc[i]->Qname = strdup(read->Qname);
-	   assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
-	   mateCounter++;
-	   //break;
+    	   readInfo *read = getReadFromFingerprint(htbl, matesByProc[i]->mate_fingerprint);
+    	   assert(read);
+    	   buildReadEnds(matesByProc[i], read, readEndsList );    
+    	   insertReadInList(fragList, matesByProc[i]) ;
+    	   matesByProc[i]->Qname = strdup(read->Qname);
+    	   assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
+    	   mateCounter++;
+    	   //break;
           
         }
     }
