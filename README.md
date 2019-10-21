@@ -21,6 +21,8 @@ Release 1.0 from the 21/10/2019 <br />
 2) TODO: now the major bottle neck is the computation of prime number for perfect hash table. <br />
 		 we shall consider a list of prime number and select it according to the number of reads. <br /> 
 
+3) TODO: problem with the option -q > 0 (it works with -q 0)
+
 Release 1.0 from the 02/07/2019 <br />
 
 1) Fix a bug when pairs overlap 2 ranks <br />
@@ -126,7 +128,7 @@ mpirun -n cpu_number mpiMD input_sam output_dir -q 0 -d 1000 -v 4 <br />
 
 options are: <br />
 
--q is for quality filtering <br />
+-q is for quality filtering (problem with q > 0 use -q 0)<br />
 -d is for optical distance duplicate <br />
 -v is level of log verbose <br />
     0 is LOG_OFF  <br />
