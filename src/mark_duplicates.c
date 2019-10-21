@@ -591,6 +591,8 @@ readInfo *readParsing (char *sam_buff, Interval *intervalByProc, size_t readInde
 
     read->fingerprint = read2Fingerprint(read);
     assert(read->fingerprint);
+   
+    read->mate_fingerprint = read2mateFP(read);
 
     //Now we search in the flag for LB name
     while (getTokenTab(&q, &tokenCar)) {
@@ -1006,6 +1008,7 @@ size_t getMateRankReadSizeBeforeBruck(llist_t *list, mateInfo **mates) {
         if (read->check_with_bruck == 1) {
 
             (*mates)[k].fingerprint = read->fingerprint;
+	    (*mates)[k].mate_fingerprint = read->mate_fingerprint;
             (*mates)[k].readLb = read->readLb;
             (*mates)[k].mateRank = read->mate_rank;
             (*mates)[k].phredScore = read->phred_score;
@@ -1090,18 +1093,20 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     
     size_t m;
     
-    int *mate_dest_rank                 = malloc( numberOfReadsToSend * sizeof(int));
+    int *mate_dest_rank                 = malloc(sizeof(int) * numberOfReadsToSend);
     int *snd_mate_Lb                    = malloc(sizeof(int) * numberOfReadsToSend);
     int *snd_mate_Materank              = malloc(sizeof(int) * numberOfReadsToSend);
     int *snd_mate_phredscore            = malloc(sizeof(int) * numberOfReadsToSend);
 
-    size_t *number_of_mates_by_procs    = malloc( num_proc * sizeof(size_t));
+    size_t *number_of_mates_by_procs    = malloc(sizeof(size_t) * num_proc);
     size_t *snd_mate_indexAfterSort     = malloc(sizeof(size_t) * numberOfReadsToSend);
     size_t *snd_mate_unclippedCoordPos  = malloc(sizeof(size_t) * numberOfReadsToSend);
     size_t *snd_mate_coordPos           = malloc(sizeof(size_t) * numberOfReadsToSend);
     size_t *snd_mate_coordMatePos       = malloc(sizeof(size_t) * numberOfReadsToSend);
     size_t *snd_mate_fingerprint        = malloc(sizeof(size_t) * numberOfReadsToSend);
-    
+    size_t *snd_mate_fingerprint2       = malloc(sizeof(size_t) * numberOfReadsToSend);    
+
+
     unsigned int *snd_mate_valueFlag    = malloc(sizeof(unsigned int) * numberOfReadsToSend);
     unsigned int *snd_mate_pair_num     = malloc(sizeof(unsigned int) * numberOfReadsToSend);
     unsigned int *snd_mate_orientation  = malloc(sizeof(unsigned int) * numberOfReadsToSend);
@@ -1119,6 +1124,7 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
         snd_mate_coordPos[m]            = mates[m].coordPos;
         snd_mate_coordMatePos[m]        = mates[m].coordMatePos;
         snd_mate_fingerprint[m]         = mates[m].fingerprint;
+	snd_mate_fingerprint2[m]        = mates[m].mate_fingerprint;
         snd_mate_valueFlag[m]           = mates[m].valueFlag;
         snd_mate_pair_num[m]            = mates[m].pair_num;
         snd_mate_orientation[m]         = mates[m].orientation;
@@ -1127,11 +1133,13 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     int **rcv_mate_Lb                       = malloc(sizeof(int *) * num_proc);
     int **rcv_mate_Materank                 = malloc(sizeof(int *) * num_proc);
     int **rcv_mate_phredscore               = malloc(sizeof(int *) * num_proc);
+
     size_t **rcv_mate_indexAfterSort        = malloc(sizeof(size_t *) * num_proc);
     size_t **rcv_mate_unclippedCoordPos     = malloc(sizeof(size_t *) * num_proc);
     size_t **rcv_mate_coordPos              = malloc(sizeof(size_t *) * num_proc);
     size_t **rcv_mate_coordMatePos          = malloc(sizeof(size_t *) * num_proc);
     size_t **rcv_mate_fingerprint           = malloc(sizeof(size_t *) * num_proc);
+    size_t **rcv_mate_fingerprint2          = malloc(sizeof(size_t *) * num_proc);
 
     unsigned int **rcv_mate_valueFlag       = malloc(sizeof(unsigned int *) * num_proc);
     unsigned int **rcv_mate_pair_num        = malloc(sizeof(unsigned int *) * num_proc);
@@ -1162,6 +1170,8 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
                     &rcv_mate_coordMatePos,
                     snd_mate_fingerprint,
                     &rcv_mate_fingerprint,
+		    snd_mate_fingerprint2,
+                    &rcv_mate_fingerprint2,
                     snd_mate_valueFlag,
                     &rcv_mate_valueFlag,
                     snd_mate_pair_num,
@@ -1195,6 +1205,7 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
 
             // Conversion of others fields
             mate->fingerprint           = rcv_mate_fingerprint[n][k];
+	    mate->mate_fingerprint      = rcv_mate_fingerprint2[n][k];
             mate->readLb                = rcv_mate_Lb[n][k];
             mate->mate_rank             = rcv_mate_Materank[n][k];
             mate->phred_score           = rcv_mate_phredscore[n][k];
@@ -1223,10 +1234,10 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     for (n = 0; n < num_proc; n++)  if (rcv_mate_coordPos[n])           free(rcv_mate_coordPos[n]);
     for (n = 0; n < num_proc; n++)  if (rcv_mate_coordMatePos[n])       free(rcv_mate_coordMatePos[n]);
     for (n = 0; n < num_proc; n++)  if (rcv_mate_fingerprint[n])        free(rcv_mate_fingerprint[n]);
+    for (n = 0; n < num_proc; n++)  if (rcv_mate_fingerprint2[n])       free(rcv_mate_fingerprint2[n]);
     for (n = 0; n < num_proc; n++)  if (rcv_mate_valueFlag[n])          free(rcv_mate_valueFlag[n]);
     for (n = 0; n < num_proc; n++)  if (rcv_mate_pair_num[n])           free(rcv_mate_pair_num[n]);
     for (n = 0; n < num_proc; n++)  if (rcv_mate_orientation[n])        free(rcv_mate_orientation[n]);
-    
 
     if (rcv_mate_Lb)                free(rcv_mate_Lb);
     if (rcv_mate_Materank)          free(rcv_mate_Materank);
@@ -1236,11 +1247,11 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     if (rcv_mate_coordPos)          free(rcv_mate_coordPos);
     if (rcv_mate_coordMatePos)      free(rcv_mate_coordMatePos);
     if (rcv_mate_fingerprint)       free(rcv_mate_fingerprint);
+    if (rcv_mate_fingerprint2)      free(rcv_mate_fingerprint2);
     if (rcv_mate_valueFlag)         free(rcv_mate_valueFlag);
     if (rcv_mate_pair_num)          free(rcv_mate_pair_num);
     if (rcv_mate_orientation)       free(rcv_mate_orientation);
     
-
     free(snd_mate_Lb);
     free(mate_dest_rank);
     free(snd_mate_Materank);
@@ -1250,11 +1261,11 @@ size_t exchangeAndFillMate_with_Bruck(readInfo ***matesByProc, mateInfo *mates, 
     free(snd_mate_coordPos);
     free(snd_mate_coordMatePos);
     free(snd_mate_fingerprint);
+    free(snd_mate_fingerprint2);
     free(snd_mate_valueFlag);
     free(snd_mate_pair_num);
     free(snd_mate_orientation);    
     free(number_of_mates_by_procs);
-
     
     return index;
 }
@@ -2054,6 +2065,10 @@ void exchangeExternFrag(llist_t *fragList,
     mateInfo *mates = malloc(numberOfExternalMate * sizeof(mateInfo));
     size_t actualNumberToSend = getMateRankReadSizeBeforeBruck(fragList, &mates);
 
+    double timeStamp, timeStart = 0;
+
+
+
     assert(actualNumberToSend == numberOfExternalMate);
 
     /* Sort mates to send  by mate rank */
@@ -2062,9 +2077,14 @@ void exchangeExternFrag(llist_t *fragList,
 
     /* Exchange mates and fill them to a readInfo array */
     readInfo **matesByProc;
+
+    timeStart = MPI_Wtime();
+
     //int totalrecv = exchangeAndFillMate(&matesByProc, mates, numberOfExternalMate, comm);
     size_t totalrecv = exchangeAndFillMate_with_Bruck(&matesByProc, mates, numberOfExternalMate, comm);
     md_log_rank_debug(rank, "[mpiMD][exchangeExternFrag] Received %zu mates, fragList size = %d\n", totalrecv, fragList->size);
+
+    fprintf(stderr,"rank = %d ::: End exchanging mates %f seconds \n", rank, MPI_Wtime() - timeStart);
 
     free(mates);
 
@@ -2088,9 +2108,11 @@ void exchangeExternFrag(llist_t *fragList,
     }    
     */
 
+    timeStart = MPI_Wtime();
 
     int mateCounter = 0;
     for (size_t i = 0; i < totalrecv; i++) {
+
         readInfo *mate = getReadFromFingerprint(htbl, matesByProc[i]->fingerprint);
         assert( (mate->pair_num == 1) || (mate->pair_num == 2));
         /* Only external mate of the current buffer has a slot in hash table.
@@ -2108,51 +2130,19 @@ void exchangeExternFrag(llist_t *fragList,
             /* insert external mate, it is partially filled as a readInfo */
             hashTableInsert(htbl, matesByProc[i]);
 
-            /* insert mate in fragments list and readEnds list (if we can construct pair) 
-             * TODO: To optimize :
-             *  - mate distribution among process may be unbalanced 
-             *    Illustration :
-             *        rank 0 : send 2 mates
-             *        rank 1 : send 3 mates
-             *         ...        ...
-             *        rank 28 : send 2923 mates
-             *  - We need to go through fragments list because we can't deduce mate's fingerprint by read's fingerprint.
-             *    We need at least mate's Qname and mate's Flag, but we don't exchange them.
-             *  - In the example above, rank 28 need to do 2923 * fragList->size comparisons in worst case.
-             *   
-             * */
-            
-            for (lnode_t *node = fragList->head; node != fragList->nil; node = node->next) {
-               
-        		// compare clipped position first because read2mateFP is expensive
-                if (node->read->coordPos == matesByProc[i]->coordMatePos) {
-				
-
-                   assert( (node->read->pair_num == 1) || (node->read->pair_num == 2));
-                   
-                   unsigned long long fragMateFingerprint = read2mateFP(node->read);
-		    
-		              if (matesByProc[i]->fingerprint == fragMateFingerprint) {
-
-                        buildReadEnds(matesByProc[i], node->read, readEndsList );    
-
-                        insertReadInList(fragList, matesByProc[i]) ;
-                        matesByProc[i]->Qname = strdup(node->read->Qname);
-
-                        assert ((node->read->pair_num == 1 ) || (node->read->pair_num ==2));
-                        
-                        if (node->read->pair_num == 1) assert (matesByProc[i]->pair_num == 2); 
-                        if (node->read->pair_num == 2) assert (matesByProc[i]->pair_num == 1);
-                        assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
-
-                        mateCounter++;
-                        break;
-                    }
-                }
-            }
+           //fprintf(stderr,"rank = %d :::  matesByProc[i]->mate_fingerprint %zu ::: matesByProc[i]->fingerprint %zu \n", rank, matesByProc[i]->mate_fingerprint, matesByProc[i]->fingerprint);
+	   readInfo *read = getReadFromFingerprint(htbl, matesByProc[i]->mate_fingerprint);
+	   assert(read);
+	   buildReadEnds(matesByProc[i], read, readEndsList );    
+	   insertReadInList(fragList, matesByProc[i]) ;
+	   matesByProc[i]->Qname = strdup(read->Qname);
+	   assert( (matesByProc[i]->pair_num == 1) || (matesByProc[i]->pair_num == 2));
+	   mateCounter++;
+	   //break;
+          
         }
     }
-
+    
     md_log_rank_trace(rank, "Found %d/%d mates\n", mateCounter, totalrecv);
 
     /*
@@ -2311,7 +2301,7 @@ char *markDuplicate (char *bufferReads, size_t readNum, char *header, MPI_Comm c
     
     timeStamp = MPI_Wtime();
     
-    MPI_Barrier(comm);
+    //MPI_Barrier(comm);
     MPI_Reduce(&localDuplicates, &totalDuplicates, 1, MPI_INT, MPI_SUM, 0, comm);
     MPI_Reduce(&localOpticalDuplicates, &totalOpticalDuplicates, 1, MPI_INT, MPI_SUM, 0, comm);
     md_log_info("Found %d duplicates and %d optical duplicates in %f seconds\n", totalDuplicates, totalOpticalDuplicates,  MPI_Wtime() - timeStamp);
