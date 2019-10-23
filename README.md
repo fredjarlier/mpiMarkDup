@@ -13,15 +13,28 @@ This is an open project initiated by Institut Curie HPC team and students from P
 Release notes 
 -------------
 
+Release 1.0 from the 23/10/2019 <br />
+
+1) Add the magic number at end of BGZF file. This way samtools doesn't complain <br />
+
+example of usage with samtools
+- samtools flagstat chr1.gz 
+- samtools view -f 1024 chr1.gz 
+
+Other tools shall complain (not tested). <br />
+
+2) TODO: construct the right bam header for proper bam creation <br />
+
+3) TODO: now the major bottle neck is the computation of the collision in perfect hash table. <br />
+		 we shall compute collision only one time according to the biggest chromosom to mark <br /> 
+
+4) TODO: problem with the option -q > 0 (it works with -q 0)
+
 Release 1.0 from the 21/10/2019 <br />
 
 1) Review of the search of mates after the bruck exchange of inter-process reads. <br />
      We now use the hash table to look for the corresponding pair of a read.  <br />
 
-2) TODO: now the major bottle neck is the computation of prime number for perfect hash table. <br />
-		 we shall consider a list of prime number and select it according to the number of reads. <br /> 
-
-3) TODO: problem with the option -q > 0 (it works with -q 0)
 
 Release 1.0 from the 02/07/2019 <br />
 
