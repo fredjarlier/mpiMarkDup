@@ -1656,13 +1656,28 @@ void writeSam(
     if (rank == master_job_phase_2 ) {
         //fprintf(stderr, "Proc rank %d ::: we write the header \n", rank);
         md_log_rank_debug(master_job_phase_2, "we write the header\n");
-        MPI_File_write(out, compressed_header, compressed_size_header, MPI_BYTE, MPI_STATUS_IGNORE);
+
+        //it doesn't work yet
+        //we add BAM\1 
+        //MPI_File_write(out, "BAM1", 4, MPI_BYTE, MPI_STATUS_IGNORE);
+        //MPI_File_write_at(out,4,compressed_header, compressed_size_header, MPI_BYTE, MPI_STATUS_IGNORE);
+        
+        MPI_File_write(out,compressed_header, compressed_size_header, MPI_BYTE, MPI_STATUS_IGNORE);        
+
     }
 
     free(compressed_header);
 
     MPI_File_set_view(out, write_offset, MPI_BYTE, MPI_BYTE, "native", finfo);
     MPI_File_write_all(out, compressed_buff, (size_t)compSize, MPI_BYTE, &status);
+
+    //master job rank write the magic number at the end of the file
+    if (rank == master_job_phase_2 ) {
+        static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
+        MPI_File_seek(out,0,MPI_SEEK_END);
+        MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
+
+    }
 
     //task FINE TUNING FINFO BACK TO READING OPERATIONS
     //MPI_Info_set(finfo,"striping_factor","12");
