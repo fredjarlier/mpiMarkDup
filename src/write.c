@@ -1672,13 +1672,14 @@ void writeSam(
     MPI_File_write_all(out, compressed_buff, (size_t)compSize, MPI_BYTE, &status);
 
     //master job rank write the magic number at the end of the file
+    /*
     if (rank == master_job_phase_2 ) {
         static uint8_t magic[28] = "\037\213\010\4\0\0\0\0\0\377\6\0\102\103\2\0\033\0\3\0\0\0\0\0\0\0\0\0";
         MPI_File_seek(out,0,MPI_SEEK_END);
         MPI_File_write(out, magic, 28, MPI_BYTE, MPI_STATUS_IGNORE);
 
     }
-
+    */
     //task FINE TUNING FINFO BACK TO READING OPERATIONS
     //MPI_Info_set(finfo,"striping_factor","12");
     //MPI_Info_set(finfo,"striping_unit","2684354560"); //1G striping
