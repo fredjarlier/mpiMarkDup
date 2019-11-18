@@ -1,6 +1,10 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.69])
 AC_INIT([mpimd], [1.0])
+
+#for install-sh, depcomp,...
+AC_CONFIG_AUX_DIR([build-aux])
+
 #AC_CONFIG_HEADERS([src/config.h])
 AM_INIT_AUTOMAKE([1.15 foreign -Wall])
 
