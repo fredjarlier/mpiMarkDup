@@ -148,7 +148,7 @@ cd mpiMarkDup/src <br />
 aclocal <br />
 autoreconf --install <br />
 ./configure <br />
-automake
+automake  <br />
 make dist <br />
 
 this create a tar.gz in mpiMarkDup/src that you can distribute <br />
