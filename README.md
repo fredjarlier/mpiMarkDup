@@ -115,17 +115,23 @@ tested with
 gcc > 4.8 (tested with 7.3) <br />
 openmpi (tested with 2.2.1, 3, 4.0, intel mpi 2019) <br />
 openssl (tested with :1.0.2k, 1.1.0g) <br />
+
+For compiling from code source or creating distribution you need <br />
+
 automake-1.15 <br />
 autoconf-2.69 <br />
 
-cmocka (optionnal and only for for unit testing) <br />
+cmocka (optionnal and only for unit testing) <br />
 A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM format. <br /> 
  
 For small tests a laptop is sufficient. <br />
 For real life test a HPC cluster with low latency network and parallel file system is a mandatory. <br />
 
-How to compile:
---------------
+How to compile from source:
+---------------------------------
+
+git clone the repo  <br />
+cd mpiMarkDup  <br /> 
 aclocal <br />
 autoconf <br />
 automake --add-missing <br />
@@ -133,6 +139,25 @@ automake --add-missing <br />
 make <br />
 make install <br />
 make clean <br />
+
+How to distribute from source:
+-----------------------------------
+
+git clone the repo  <br />
+cd mpiMarkDup/src <br /> 
+aclocal <br />
+autoreconf --install <br />
+./configure <br />
+make distcheck <br />
+
+this create a tar.gz in mpiMarkDup/src that you can distribute <br />
+
+How to compile from tar.gz:
+--------------------------
+tar -xvzf mpimd-1.0.tar.gz <br />
+cd mpimd-1.0 <br />
+./configure <br />
+make <br />
 
 How to test it
 -------------
