@@ -150,6 +150,8 @@ autoreconf --install <br />
 ./configure <br />
 automake  <br />
 make dist <br />
+or <br />
+make distcheck <br />
 
 this create a tar.gz in mpiMarkDup/src that you can distribute <br />
 
