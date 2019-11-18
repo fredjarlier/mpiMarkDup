@@ -49,6 +49,9 @@ tested with
 gcc > 4.8 (tested with 7.3) <br />
 openmpi (tested with 2.2.1, 3, 4.0, intel mpi 2019) <br />
 openssl (tested with :1.0.2k, 1.1.0g) <br />
+
+for distribution or compilation from source  <br />
+
 automake-1.15 <br />
 autoconf-2.69 <br />
 
@@ -58,8 +61,8 @@ A SAM file of aligned paired reads, trimmed or not, and compliant with the SAM f
 For small tests a laptop is sufficient. <br />
 For real life test a HPC cluster with low latency network and parallel file system is a mandatory. <br />
 
-How to compile:
---------------
+How to compile from source:
+---------------------------------
 aclocal <br />
 autoconf <br />
 automake --add-missing <br />
@@ -67,6 +70,11 @@ automake --add-missing <br />
 make <br />
 make install <br />
 make clean <br />
+
+How to distribute:
+---------------------
+
+See the master branch
 
 How to test it
 -------------
