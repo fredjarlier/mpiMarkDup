@@ -143,8 +143,9 @@ void parallel_sort_any_dim(
 	//this is to facilitate the bitonic sorting
 	//if the local coordinates to sort are to big we could get rid of
 	//this step.
-	base_arr2 = local_reads_coordinates_unsorted;
-	qksort(coord_index, local_readNum, 0, local_readNum - 1, compare_size_t);
+	
+	//base_arr2 = local_reads_coordinates_unsorted;
+	qksort(coord_index, local_reads_coordinates_unsorted, local_readNum, 0, local_readNum - 1, compare_size_t);
 
 	//We index data
 	for(j = 0; j < local_readNum; j++){

@@ -1058,20 +1058,19 @@ int main (int argc, char *argv[]) {
 
                 //those vectors are the same that  local_..._sorted but without zero padding
                 size_t *local_reads_coordinates_sorted_trimmed = NULL;
-                int *local_dest_rank_sorted_trimmed = NULL;
-                int *local_reads_sizes_sorted_trimmed = NULL;
                 size_t *local_offset_source_sorted_trimmed = NULL;
                 size_t *local_offset_dest_sorted_trimmed = NULL;
-                int *local_source_rank_sorted_trimmed = NULL;
-
                 //vectors used in the bruck just after the parabitonic sort
                 size_t *local_reads_coordinates_sorted_trimmed_for_bruck = NULL;
-                int *local_dest_rank_sorted_trimmed_for_bruck = NULL;
-                int *local_reads_sizes_sorted_trimmed_for_bruck = NULL;
                 size_t *local_offset_source_sorted_trimmed_for_bruck = NULL;
                 size_t *local_offset_dest_sorted_trimmed_for_bruck = NULL;
+                
+                int *local_dest_rank_sorted_trimmed_for_bruck = NULL;
+                int *local_reads_sizes_sorted_trimmed_for_bruck = NULL; 
                 int *local_source_rank_sorted_trimmed_for_bruck = NULL;
-
+                int *local_source_rank_sorted_trimmed = NULL;
+                int *local_dest_rank_sorted_trimmed = NULL;
+                int *local_reads_sizes_sorted_trimmed = NULL;
                 //task Init offset and size for source - free chr
                 // from mpiSort_utils.c
 
@@ -1099,12 +1098,13 @@ int main (int argc, char *argv[]) {
                 //this step.
                 time_count = MPI_Wtime();
 
-                base_arr2 = local_reads_coordinates_unsorted;
+                //base_arr2 = local_reads_coordinates_unsorted;
 				//Seems like base_arr2 is never used again, happens in other files aswell
 
                 //A QUOI SERT qksort
 
-                qksort(coord_index, local_readNum, 0, local_readNum - 1, compare_size_t);
+                qksort(coord_index, local_reads_coordinates_unsorted, local_readNum, 
+                    0, local_readNum - 1, compare_size_t);
                 //It looks like qksort inverts the values in coord_index
 
                 //if (split_rank == chosen_split_rank) {

@@ -35,9 +35,9 @@
 
 #include "qksort.h"
 
-size_t *base_arr2;
+//size_t *base_arr2;
 
-int compare_size_t(const void *a, const void *b){
+int compare_size_t(size_t *a, size_t *b, size_t *base_arr2){
 
 	 size_t aa = *(size_t *)a, bb = *(size_t *)b;
 
@@ -61,7 +61,8 @@ int compare_size_t_V2(const void *a, const void *b){
 
 }
 
-int partition(void *data, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
+int partition(void *data, size_t *base_arr2, size_t i, size_t k, 
+	int (*compare)(size_t *key1, size_t *key2, size_t *base_arr2)){
 
 	size_t *a = data;
 	size_t *pval, *temp;
@@ -110,7 +111,7 @@ int partition(void *data, size_t i, size_t k, int (*compare)(const void *key1, c
 
 		do {
 			k--;
-		} while (compare(&a[k], pval) > 0);
+		} while (compare(&a[k], pval, base_arr2) > 0);
 
 		/*
 		 * move right until an element is found in the wrong partition
@@ -118,7 +119,7 @@ int partition(void *data, size_t i, size_t k, int (*compare)(const void *key1, c
 
 		do {
 			i++;
-		} while (compare(&a[i], pval) < 0);
+		} while (compare(&a[i], pval, base_arr2) < 0);
 
 		if (i >= k){
 			/*
@@ -148,7 +149,8 @@ int partition(void *data, size_t i, size_t k, int (*compare)(const void *key1, c
 
 }
 
-int qksort(void *data, size_t size, size_t i, size_t k, int (*compare)(const void *key1, const void *key2)){
+int qksort(void *data, size_t *base_arr2, size_t size, size_t i, size_t k, 
+	         int (*compare)(size_t *key1, size_t *key2, size_t *base_arr2)){
 
 	int j;
 
@@ -166,13 +168,13 @@ int qksort(void *data, size_t size, size_t i, size_t k, int (*compare)(const voi
 		 */
 
 
-		if ((j = partition(data, i, k, compare)) < 0){
+		if ((j = partition(data, base_arr2, i, k, compare)) < 0){
 			return -1;
 		}
 		/*
 		 * recursively sort the left partition
 		 */
-		if (qksort(data, size, i, j, compare) < 0)
+		if (qksort(data, base_arr2, size, i, j, compare) < 0)
 			return -1;
 		/*
 		 * iterate and sort the right partition

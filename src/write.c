@@ -1043,8 +1043,9 @@ void writeSam(
         coord_index[j] = j;
     }
 
-    base_arr2 = new_local_offset_source_sorted_bruck;
-    qksort(coord_index, previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
+    //base_arr2 = new_local_offset_source_sorted_bruck;
+    qksort(coord_index, new_local_offset_source_sorted_bruck, 
+            previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
 
     int *new_local_reads_sizes_sorted_bruck2        	= malloc(previous_local_readNum * sizeof(int));
     int *new_local_reads_dest_rank_sorted_bruck2      = malloc(previous_local_readNum * sizeof(int));
@@ -1376,8 +1377,8 @@ void writeSam(
     //now we sort new_offset_dest_phase2
 
 
-    base_arr2 = data_offsets_to_sort;
-    qksort(new_offset_dest_index_phase3, previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
+    //base_arr2 = data_offsets_to_sort;
+    qksort(new_offset_dest_index_phase3, data_offsets_to_sort, previous_local_readNum, 0, previous_local_readNum - 1, compare_size_t);
 
     size_t *offsets_sorted = malloc(sizeof(size_t) * previous_local_readNum);
 
@@ -1826,9 +1827,9 @@ void writeSam_discordant_and_unmapped(
 
 
     //previous version of local sort with output of permutation
-    base_arr2 = offset_source_unsorted;
+    //base_arr2 = offset_source_unsorted;
     //new version of the local sort
-    qksort(offset_source_index, local_readNum, 0, local_readNum - 1, compare_size_t);
+    qksort(offset_source_index, offset_source_unsorted, local_readNum, 0, local_readNum - 1, compare_size_t);
 
     /*
      * reorder the offset and the size
@@ -3828,8 +3829,9 @@ void writeSam_any_dim(
 
         free(number_of_reads_by_procs);
 
-        base_arr2 = data_offsets_to_sort;
-        qksort(new_offset_dest_index_phase3, local_readNum, 0, local_readNum - 1, compare_size_t);
+        //base_arr2 = data_offsets_to_sort;
+        qksort(new_offset_dest_index_phase3, data_offsets_to_sort, local_readNum, 0, 
+                    local_readNum - 1, compare_size_t);
 
         size_t *offsets_sorted = malloc(sizeof(size_t) * local_readNum);
 
