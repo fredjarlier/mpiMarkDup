@@ -1,3 +1,7 @@
+The project has moved here:
+
+https://github.com/bioinfo-pf-curie/mpiMarkDup
+
 # mpiMarkDup
 
 MPI and C based program of marking duplicates for Next Generation Sequencing technology.<br /> 
